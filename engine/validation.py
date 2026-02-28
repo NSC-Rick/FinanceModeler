@@ -36,12 +36,16 @@ def get_default_model_inputs():
             }
         ],
         'opex_items': [
-            {
-                'name': 'Rent',
-                'amount': 2000.0,
-                'growth_rate': 0.03,
-                'category': 'fixed'
-            }
+            {'name': 'Rent', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'},
+            {'name': 'Utilities', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'},
+            {'name': 'Heat', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'},
+            {'name': 'Insurance', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'},
+            {'name': 'Maintenance', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'},
+            {'name': 'Subscriptions', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'},
+            {'name': 'Professional Fees', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'},
+            {'name': 'Marketing', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'},
+            {'name': 'Office / Supplies', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'},
+            {'name': 'Miscellaneous', 'amount': 0.0, 'growth_rate': 0.03, 'category': 'fixed'}
         ],
         'loan_principal': 50000.0,
         'loan_annual_rate': 0.06,

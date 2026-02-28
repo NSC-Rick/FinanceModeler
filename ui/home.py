@@ -50,13 +50,27 @@ def initialize_session_state():
                 role['role_type'] = 'indirect'
     
     if 'opex_items' not in st.session_state:
+        DEFAULT_OVERHEAD_CATEGORIES = [
+            "Rent",
+            "Utilities",
+            "Heat",
+            "Insurance",
+            "Maintenance",
+            "Subscriptions",
+            "Professional Fees",
+            "Marketing",
+            "Office / Supplies",
+            "Miscellaneous"
+        ]
+        
         st.session_state.opex_items = [
             {
-                'name': 'Rent',
-                'amount': 2000.0,
+                'name': category,
+                'amount': 0.0,
                 'growth_rate': 0.03,
                 'category': 'fixed'
             }
+            for category in DEFAULT_OVERHEAD_CATEGORIES
         ]
     else:
         for item in st.session_state.opex_items:

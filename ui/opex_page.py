@@ -15,6 +15,7 @@ def render():
     st.divider()
     
     st.subheader("Operating Expense Items")
+    st.caption("Common overhead categories are preloaded. Modify as needed.")
     
     for idx, item in enumerate(st.session_state.opex_items):
         with st.expander(f"**{item['name']}**", expanded=True):
