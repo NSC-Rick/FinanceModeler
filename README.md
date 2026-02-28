@@ -1,4 +1,4 @@
-# Fin Lite - Financial Modeling Web App
+# Operating Model - Financial Modeling Web App
 
 A Streamlit-based financial modeling application for SBDC-style business planning with monthly/annual projections, multiple revenue streams, role-based payroll, and comprehensive financial statements.
 
@@ -74,7 +74,7 @@ finlite_app/
 #### Scenario Management
 - **Save Scenario**: Download your current model as a JSON file
   - Click "Download Scenario" to save all inputs
-  - File is named `finlite_scenario.json`
+  - File is named `operating_model_scenario.json`
   - Can be loaded later to restore exact model state
   
 - **Load Scenario**: Upload a previously saved scenario

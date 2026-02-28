@@ -101,10 +101,11 @@ def render():
     """Render the home page."""
     initialize_session_state()
     
-    st.title("Fin Lite - Financial Modeling")
+    st.title("Operating Model")
+    st.caption("Structured financial and capital modeling framework")
     
     st.markdown("""
-    ### Welcome to Fin Lite
+    ### Welcome to Operating Model
     
     This application helps you build SBDC-style financial models with:
     - **Monthly or Annual** time periods
@@ -142,7 +143,7 @@ def render():
         st.download_button(
             label="Download Scenario",
             data=json_str,
-            file_name="finlite_scenario.json",
+            file_name="operating_model_scenario.json",
             mime="application/json",
             help="Download current model inputs as JSON file"
         )

@@ -3,13 +3,13 @@ from ui import home, revenue_page, payroll_page, opex_page, financing_page, revi
 
 
 st.set_page_config(
-    page_title="Fin Lite - Financial Modeling",
+    page_title="Operating Model",
     page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-st.sidebar.title("Fin Lite Navigation")
+st.sidebar.title("Operating Model")
 
 pages = {
     "🏠 Home": home,
