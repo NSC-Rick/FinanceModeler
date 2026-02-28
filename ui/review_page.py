@@ -110,6 +110,86 @@ def render():
                 file_name=download_filename,
                 mime="text/csv"
             )
+            
+            # Overlay section: Debt Service and Owner Compensation
+            st.divider()
+            st.markdown("### Cash Flow Analysis")
+            st.caption("Supplemental analysis showing debt service and owner compensation impact on cash")
+            
+            # Get loan schedule for debt service calculation
+            loan_schedule = outputs['loan_schedule']
+            
+            # Get owner compensation configuration
+            owner_comp_config = st.session_state.owner_compensation
+            owner_comp_mode = owner_comp_config.get('mode', 'distribution')
+            owner_comp_annual = owner_comp_config.get('amount', 0.0)
+            
+            # Convert owner comp to per-period
+            if st.session_state.time_mode == 'monthly':
+                owner_comp_per_period = owner_comp_annual / 12
+            else:
+                owner_comp_per_period = owner_comp_annual
+            
+            # Build overlay dataframe
+            overlay_data = {}
+            
+            # Get Net Income from income statement
+            net_income_row = income_statement['net_income']
+            
+            # Total debt service per period (principal + interest)
+            total_debt_service = loan_schedule['payment']
+            
+            # Calculate cash metrics
+            cash_after_debt = net_income_row - total_debt_service
+            
+            # Only subtract owner comp if in distribution mode
+            if owner_comp_mode == 'distribution':
+                cash_after_debt_and_owner = cash_after_debt - owner_comp_per_period
+            else:
+                # In payroll mode, owner comp already in income statement
+                cash_after_debt_and_owner = cash_after_debt
+            
+            # Build overlay dataframe with same structure as income statement
+            overlay_df = pd.DataFrame({
+                'Net Income': net_income_row,
+                'Debt Service (Principal + Interest)': total_debt_service,
+                'Cash After Debt': cash_after_debt,
+                'Owner Compensation': owner_comp_per_period if owner_comp_mode == 'distribution' else 0,
+                'Cash After Debt & Owner': cash_after_debt_and_owner
+            })
+            
+            # Transpose to match income statement format
+            overlay_transposed = overlay_df.T
+            overlay_transposed.columns = [f'Period {i}' for i in overlay_transposed.columns]
+            overlay_transposed.index.name = 'Line Item'
+            
+            # Display based on selected view
+            if income_view == '% of Revenue':
+                overlay_display = overlay_transposed.copy()
+                revenue_row = income_statement['revenue']
+                
+                for col_idx, period in enumerate(overlay_display.columns):
+                    revenue_value = revenue_row.iloc[col_idx]
+                    if revenue_value != 0:
+                        overlay_display[period] = (overlay_transposed[period] / revenue_value) * 100
+                    else:
+                        overlay_display[period] = 0
+                
+                st.dataframe(
+                    overlay_display.style.format("{:.2f}%"),
+                    use_container_width=True
+                )
+            else:
+                st.dataframe(
+                    overlay_transposed.style.format("${:,.2f}"),
+                    use_container_width=True
+                )
+            
+            # Add explanatory note
+            if owner_comp_mode == 'payroll':
+                st.info("ℹ️ Owner compensation is treated as **Payroll** and already included in the Income Statement above. Cash After Debt & Owner equals Cash After Debt.")
+            else:
+                st.info(f"ℹ️ Owner compensation (${owner_comp_annual:,.2f}/year) is treated as **Distribution** and deducted from cash after debt service.")
         
         with tab2:
             st.subheader("Cash Flow Statement")
