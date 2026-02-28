@@ -59,6 +59,31 @@ def get_default_model_inputs():
         'owner_compensation': {
             'mode': 'distribution',
             'amount': 0.0
+        },
+        'capital_stack': {
+            'enabled': False,
+            'uses': {
+                'purchase_price': 0.0,
+                'inventory_adjustment': 0.0,
+                'closing_costs': 0.0,
+                'working_capital': 0.0,
+                'capex': 0.0
+            },
+            'sources': {
+                'buyer_equity': 0.0,
+                'community_equity': 0.0,
+                'donations': 0.0,
+                'bank_loan': {
+                    'amount': 0.0,
+                    'rate': 0.06,
+                    'term': 10
+                },
+                'seller_note': {
+                    'amount': 0.0,
+                    'rate': 0.05,
+                    'term': 5
+                }
+            }
         }
     }
 
@@ -163,7 +188,24 @@ def session_state_to_model_inputs(session_state) -> Dict[str, Any]:
         'inventory_days': session_state.get('inventory_days', 30),
         'tax_rate': session_state.get('tax_rate', 0.25),
         'annual_depreciation': session_state.get('annual_depreciation', 0.0),
-        'owner_compensation': session_state.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0})
+        'owner_compensation': session_state.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0}),
+        'capital_stack': session_state.get('capital_stack', {
+            'enabled': False,
+            'uses': {
+                'purchase_price': 0.0,
+                'inventory_adjustment': 0.0,
+                'closing_costs': 0.0,
+                'working_capital': 0.0,
+                'capex': 0.0
+            },
+            'sources': {
+                'buyer_equity': 0.0,
+                'community_equity': 0.0,
+                'donations': 0.0,
+                'bank_loan': {'amount': 0.0, 'rate': 0.06, 'term': 10},
+                'seller_note': {'amount': 0.0, 'rate': 0.05, 'term': 5}
+            }
+        })
     }
 
 
@@ -191,3 +233,20 @@ def model_inputs_to_session_state(model_inputs: Dict[str, Any], session_state):
     session_state.tax_rate = model_inputs['tax_rate']
     session_state.annual_depreciation = model_inputs['annual_depreciation']
     session_state.owner_compensation = model_inputs.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0})
+    session_state.capital_stack = model_inputs.get('capital_stack', {
+        'enabled': False,
+        'uses': {
+            'purchase_price': 0.0,
+            'inventory_adjustment': 0.0,
+            'closing_costs': 0.0,
+            'working_capital': 0.0,
+            'capex': 0.0
+        },
+        'sources': {
+            'buyer_equity': 0.0,
+            'community_equity': 0.0,
+            'donations': 0.0,
+            'bank_loan': {'amount': 0.0, 'rate': 0.06, 'term': 10},
+            'seller_note': {'amount': 0.0, 'rate': 0.05, 'term': 5}
+        }
+    })

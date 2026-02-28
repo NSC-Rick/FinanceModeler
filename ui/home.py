@@ -109,6 +109,33 @@ def initialize_session_state():
             'mode': 'distribution',
             'amount': 0.0
         }
+    
+    if 'capital_stack' not in st.session_state:
+        st.session_state.capital_stack = {
+            'enabled': False,
+            'uses': {
+                'purchase_price': 0.0,
+                'inventory_adjustment': 0.0,
+                'closing_costs': 0.0,
+                'working_capital': 0.0,
+                'capex': 0.0
+            },
+            'sources': {
+                'buyer_equity': 0.0,
+                'community_equity': 0.0,
+                'donations': 0.0,
+                'bank_loan': {
+                    'amount': 0.0,
+                    'rate': 0.06,
+                    'term': 10
+                },
+                'seller_note': {
+                    'amount': 0.0,
+                    'rate': 0.05,
+                    'term': 5
+                }
+            }
+        }
 
 
 def render():
