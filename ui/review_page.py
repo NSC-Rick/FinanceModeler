@@ -39,9 +39,8 @@ def render():
         
         st.divider()
         
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
             "📊 Income Statement",
-            "💼 P&L",
             "💰 Cash Flow",
             "🏦 Loan Schedule",
             "📈 KPIs",
@@ -113,90 +112,6 @@ def render():
             )
         
         with tab2:
-            st.subheader("Profit & Loss Statement")
-            
-            # Add toggle for dollar vs % of revenue view
-            pnl_view = st.radio(
-                "Display Format:",
-                options=['Dollar', '% of Revenue'],
-                horizontal=True,
-                key='pnl_view_toggle'
-            )
-            
-            pnl_statement = outputs['pnl_statement'].copy()
-            
-            # Transpose: line items as rows, periods as columns
-            pnl_transposed = pnl_statement.T
-            
-            # Rename columns to Period 0, Period 1, etc.
-            pnl_transposed.columns = [f'Period {i}' for i in pnl_transposed.columns]
-            
-            # Clean up row labels for financial statement presentation
-            row_labels = {
-                'revenue': 'Revenue',
-                'cogs_materials': 'COGS - Materials',
-                'cogs_direct_labor': 'COGS - Direct Labor',
-                'cogs_total': 'Total COGS',
-                'gross_profit': 'Gross Profit',
-                'indirect_payroll': 'Indirect Payroll',
-                'opex': 'Operating Expenses',
-                'operating_expenses': 'Total Operating Expenses',
-                'ebitda': 'EBITDA',
-                'depreciation': 'Depreciation',
-                'ebit': 'EBIT',
-                'interest': 'Interest Expense',
-                'pre_tax_income': 'Pre-Tax Income',
-                'taxes': 'Taxes',
-                'net_income': 'Net Income'
-            }
-            pnl_transposed.index = pnl_transposed.index.map(lambda x: row_labels.get(x, x))
-            pnl_transposed.index.name = 'Line Item'
-            
-            # Convert to % of revenue if selected
-            if pnl_view == '% of Revenue':
-                pnl_display = pnl_transposed.copy()
-                
-                # Get revenue row for each period
-                revenue_row = pnl_statement['revenue']
-                
-                # Convert each column (period) to % of revenue
-                for col_idx, period in enumerate(pnl_display.columns):
-                    revenue_value = revenue_row.iloc[col_idx]
-                    
-                    if revenue_value != 0:
-                        # Divide each line item by revenue for this period
-                        pnl_display[period] = (pnl_transposed[period] / revenue_value) * 100
-                    else:
-                        # Avoid divide by zero - set to 0
-                        pnl_display[period] = 0
-                
-                st.dataframe(
-                    pnl_display.style.format("{:.2f}%"),
-                    use_container_width=True
-                )
-                
-                download_data = pnl_display.to_csv()
-                download_filename = "pnl_statement_percent.csv"
-            else:
-                # Dollar view
-                pnl_display = pnl_transposed
-                
-                st.dataframe(
-                    pnl_display.style.format("${:,.2f}"),
-                    use_container_width=True
-                )
-                
-                download_data = pnl_display.to_csv()
-                download_filename = "pnl_statement.csv"
-            
-            st.download_button(
-                label=f"Download P&L Statement ({pnl_view}) (CSV)",
-                data=download_data,
-                file_name=download_filename,
-                mime="text/csv"
-            )
-        
-        with tab3:
             st.subheader("Cash Flow Statement")
             
             cash_flow = outputs['cash_flow_statement'].copy()
@@ -220,7 +135,7 @@ def render():
                 mime="text/csv"
             )
         
-        with tab4:
+        with tab3:
             st.subheader("Loan Amortization Schedule")
             
             loan_schedule = outputs['loan_schedule'].copy()
@@ -237,7 +152,7 @@ def render():
                 mime="text/csv"
             )
         
-        with tab5:
+        with tab4:
             st.subheader("Key Performance Indicators")
             
             kpis = outputs['kpis'].copy()
@@ -364,7 +279,7 @@ def render():
                 mime="text/csv"
             )
         
-        with tab6:
+        with tab5:
             st.subheader("Visualizations")
             
             fig_revenue = go.Figure()
