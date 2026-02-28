@@ -51,18 +51,64 @@ def render():
         with tab1:
             st.subheader("Income Statement")
             
-            income_statement = outputs['income_statement'].copy()
-            income_statement.index.name = 'Period'
-            
-            st.dataframe(
-                income_statement.style.format("${:,.2f}"),
-                use_container_width=True
+            # Add toggle for dollar vs % of revenue view
+            income_view = st.radio(
+                "Display Format:",
+                options=['Dollar', '% of Revenue'],
+                horizontal=True,
+                key='income_view_toggle'
             )
             
+            income_statement = outputs['income_statement'].copy()
+            
+            # Transpose: line items as rows, periods as columns
+            income_transposed = income_statement.T
+            
+            # Rename columns to Period 0, Period 1, etc.
+            income_transposed.columns = [f'Period {i}' for i in income_transposed.columns]
+            income_transposed.index.name = 'Line Item'
+            
+            # Convert to % of revenue if selected
+            if income_view == '% of Revenue':
+                income_display = income_transposed.copy()
+                
+                # Get revenue row for each period
+                revenue_row = income_statement['revenue']
+                
+                # Convert each column (period) to % of revenue
+                for col_idx, period in enumerate(income_display.columns):
+                    revenue_value = revenue_row.iloc[col_idx]
+                    
+                    if revenue_value != 0:
+                        # Divide each line item by revenue for this period
+                        income_display[period] = (income_transposed[period] / revenue_value) * 100
+                    else:
+                        # Avoid divide by zero - set to 0
+                        income_display[period] = 0
+                
+                st.dataframe(
+                    income_display.style.format("{:.2f}%"),
+                    use_container_width=True
+                )
+                
+                download_data = income_display.to_csv()
+                download_filename = "income_statement_percent.csv"
+            else:
+                # Dollar view
+                income_display = income_transposed
+                
+                st.dataframe(
+                    income_display.style.format("${:,.2f}"),
+                    use_container_width=True
+                )
+                
+                download_data = income_display.to_csv()
+                download_filename = "income_statement.csv"
+            
             st.download_button(
-                label="Download Income Statement (CSV)",
-                data=income_statement.to_csv(),
-                file_name="income_statement.csv",
+                label=f"Download Income Statement ({income_view}) (CSV)",
+                data=download_data,
+                file_name=download_filename,
                 mime="text/csv"
             )
         
@@ -154,16 +200,22 @@ def render():
             st.subheader("Cash Flow Statement")
             
             cash_flow = outputs['cash_flow_statement'].copy()
-            cash_flow.index.name = 'Period'
+            
+            # Transpose: line items as rows, periods as columns
+            cash_flow_transposed = cash_flow.T
+            
+            # Rename columns to Period 0, Period 1, etc.
+            cash_flow_transposed.columns = [f'Period {i}' for i in cash_flow_transposed.columns]
+            cash_flow_transposed.index.name = 'Line Item'
             
             st.dataframe(
-                cash_flow.style.format("${:,.2f}"),
+                cash_flow_transposed.style.format("${:,.2f}"),
                 use_container_width=True
             )
             
             st.download_button(
                 label="Download Cash Flow (CSV)",
-                data=cash_flow.to_csv(),
+                data=cash_flow_transposed.to_csv(),
                 file_name="cash_flow.csv",
                 mime="text/csv"
             )
