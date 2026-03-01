@@ -33,19 +33,22 @@ def render():
             """)
         
             st.subheader("Uses of Funds")
-        
-            col1, col2 = st.columns(2)
-        
-            with col1:
-                purchase_price = st.number_input(
-                    "Purchase Price",
-                    min_value=0.0,
-                    value=st.session_state.capital_stack['uses']['purchase_price'],
-                    step=10000.0,
-                    key="cs_purchase_price",
-                    help="Total purchase price of the business"
-                )
             
+            # Business Acquisition Section
+            st.markdown("### 💼 Business Acquisition")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                business_purchase_price = st.number_input(
+                    "Business Purchase Price",
+                    min_value=0.0,
+                    value=st.session_state.capital_stack['uses']['business_purchase_price'],
+                    step=10000.0,
+                    key="cs_business_purchase_price",
+                    help="Purchase price of the business operations and assets"
+                )
+                
                 inventory_adjustment = st.number_input(
                     "Inventory Adjustment",
                     min_value=0.0,
@@ -55,16 +58,61 @@ def render():
                     help="Additional inventory to be purchased"
                 )
             
-                closing_costs = st.number_input(
-                    "Closing Costs",
-                    min_value=0.0,
-                    value=st.session_state.capital_stack['uses']['closing_costs'],
-                    step=1000.0,
-                    key="cs_closing",
-                    help="Legal, accounting, and other closing costs"
-                )
-        
             with col2:
+                business_closing_costs = st.number_input(
+                    "Business Closing Costs",
+                    min_value=0.0,
+                    value=st.session_state.capital_stack['uses']['business_closing_costs'],
+                    step=1000.0,
+                    key="cs_business_closing",
+                    help="Legal, accounting, and other business closing costs"
+                )
+            
+            # Calculate total business uses
+            total_business_uses = business_purchase_price + inventory_adjustment + business_closing_costs
+            
+            st.info(f"**Total Business Uses:** ${total_business_uses:,.2f}")
+            
+            st.divider()
+            
+            # Real Estate Section
+            st.markdown("### 🏢 Real Estate (Optional)")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                real_estate_purchase = st.number_input(
+                    "Real Estate Purchase",
+                    min_value=0.0,
+                    value=st.session_state.capital_stack['uses']['real_estate_purchase'],
+                    step=10000.0,
+                    key="cs_real_estate_purchase",
+                    help="Purchase price of real estate property"
+                )
+            
+            with col2:
+                real_estate_closing_costs = st.number_input(
+                    "Real Estate Closing Costs",
+                    min_value=0.0,
+                    value=st.session_state.capital_stack['uses']['real_estate_closing_costs'],
+                    step=1000.0,
+                    key="cs_real_estate_closing",
+                    help="Legal, title, and other real estate closing costs"
+                )
+            
+            # Calculate total real estate uses
+            total_real_estate_uses = real_estate_purchase + real_estate_closing_costs
+            
+            st.info(f"**Total Real Estate Uses:** ${total_real_estate_uses:,.2f}")
+            
+            st.divider()
+            
+            # Other Uses Section
+            st.markdown("### 🔧 Other Uses")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
                 working_capital = st.number_input(
                     "Working Capital Buffer",
                     min_value=0.0,
@@ -74,6 +122,7 @@ def render():
                     help="Cash reserve for operations"
                 )
             
+            with col2:
                 capex = st.number_input(
                     "Minor Capex",
                     min_value=0.0,
@@ -82,10 +131,12 @@ def render():
                     key="cs_capex",
                     help="Minor capital expenditures needed at closing"
                 )
-        
-            total_uses = purchase_price + inventory_adjustment + closing_costs + working_capital + capex
-        
-            st.metric("**Total Uses of Funds**", f"${total_uses:,.2f}")
+            
+            # Calculate total uses (aggregation)
+            total_uses = total_business_uses + total_real_estate_uses + working_capital + capex
+            
+            st.divider()
+            st.metric("**Total Uses of Funds (Combined)**", f"${total_uses:,.2f}")
         
             st.divider()
         
@@ -194,9 +245,17 @@ def render():
         
             # Update session state
             st.session_state.capital_stack['uses'] = {
-                'purchase_price': purchase_price,
+                # Legacy fields (preserved for backward compatibility)
+                'purchase_price': business_purchase_price,  # Map to new field for compatibility
+                'closing_costs': business_closing_costs,
+                # New Business Acquisition fields
+                'business_purchase_price': business_purchase_price,
                 'inventory_adjustment': inventory_adjustment,
-                'closing_costs': closing_costs,
+                'business_closing_costs': business_closing_costs,
+                # New Real Estate fields
+                'real_estate_purchase': real_estate_purchase,
+                'real_estate_closing_costs': real_estate_closing_costs,
+                # Other uses
                 'working_capital': working_capital,
                 'capex': capex
             }

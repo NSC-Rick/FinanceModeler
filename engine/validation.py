@@ -63,9 +63,17 @@ def get_default_model_inputs():
         'capital_stack': {
             'enabled': False,
             'uses': {
+                # Legacy fields (preserved for backward compatibility)
                 'purchase_price': 0.0,
-                'inventory_adjustment': 0.0,
                 'closing_costs': 0.0,
+                # New Business Acquisition fields
+                'business_purchase_price': 0.0,
+                'inventory_adjustment': 0.0,
+                'business_closing_costs': 0.0,
+                # New Real Estate fields
+                'real_estate_purchase': 0.0,
+                'real_estate_closing_costs': 0.0,
+                # Other uses
                 'working_capital': 0.0,
                 'capex': 0.0
             },
@@ -205,8 +213,12 @@ def session_state_to_model_inputs(session_state) -> Dict[str, Any]:
             'enabled': False,
             'uses': {
                 'purchase_price': 0.0,
-                'inventory_adjustment': 0.0,
                 'closing_costs': 0.0,
+                'business_purchase_price': 0.0,
+                'inventory_adjustment': 0.0,
+                'business_closing_costs': 0.0,
+                'real_estate_purchase': 0.0,
+                'real_estate_closing_costs': 0.0,
                 'working_capital': 0.0,
                 'capex': 0.0
             },
@@ -257,12 +269,16 @@ def model_inputs_to_session_state(model_inputs: Dict[str, Any], session_state):
     session_state.tax_rate = model_inputs['tax_rate']
     session_state.annual_depreciation = model_inputs['annual_depreciation']
     session_state.owner_compensation = model_inputs.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0})
-    session_state.capital_stack = model_inputs.get('capital_stack', {
+    capital_stack = model_inputs.get('capital_stack', {
         'enabled': False,
         'uses': {
             'purchase_price': 0.0,
-            'inventory_adjustment': 0.0,
             'closing_costs': 0.0,
+            'business_purchase_price': 0.0,
+            'inventory_adjustment': 0.0,
+            'business_closing_costs': 0.0,
+            'real_estate_purchase': 0.0,
+            'real_estate_closing_costs': 0.0,
             'working_capital': 0.0,
             'capex': 0.0
         },
@@ -274,6 +290,26 @@ def model_inputs_to_session_state(model_inputs: Dict[str, Any], session_state):
             'seller_note': {'amount': 0.0, 'rate': 0.05, 'term': 5}
         }
     })
+    
+    # Backward compatibility migration: convert legacy purchase_price to new structure
+    uses = capital_stack.get('uses', {})
+    if 'purchase_price' in uses and uses.get('purchase_price', 0.0) > 0:
+        if 'business_purchase_price' not in uses or uses.get('business_purchase_price', 0.0) == 0.0:
+            # Migrate legacy purchase_price to business_purchase_price
+            capital_stack['uses']['business_purchase_price'] = uses['purchase_price']
+            capital_stack['uses']['real_estate_purchase'] = 0.0
+    
+    # Ensure all new fields exist with defaults
+    if 'business_purchase_price' not in uses:
+        capital_stack['uses']['business_purchase_price'] = 0.0
+    if 'business_closing_costs' not in uses:
+        capital_stack['uses']['business_closing_costs'] = 0.0
+    if 'real_estate_purchase' not in uses:
+        capital_stack['uses']['real_estate_purchase'] = 0.0
+    if 'real_estate_closing_costs' not in uses:
+        capital_stack['uses']['real_estate_closing_costs'] = 0.0
+    
+    session_state.capital_stack = capital_stack
     session_state.mode = model_inputs.get('mode', 'Basic')
     session_state.seasonality = model_inputs.get('seasonality', {
         'enabled': False,

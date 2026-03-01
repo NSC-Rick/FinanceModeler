@@ -117,9 +117,17 @@ def initialize_session_state():
         st.session_state.capital_stack = {
             'enabled': False,
             'uses': {
+                # Legacy field (preserved for backward compatibility)
                 'purchase_price': 0.0,
-                'inventory_adjustment': 0.0,
                 'closing_costs': 0.0,
+                # New Business Acquisition fields
+                'business_purchase_price': 0.0,
+                'inventory_adjustment': 0.0,
+                'business_closing_costs': 0.0,
+                # New Real Estate fields
+                'real_estate_purchase': 0.0,
+                'real_estate_closing_costs': 0.0,
+                # Other uses
                 'working_capital': 0.0,
                 'capex': 0.0
             },
@@ -139,6 +147,27 @@ def initialize_session_state():
                 }
             }
         }
+    
+    # Backward compatibility migration: convert legacy purchase_price to new structure
+    if 'capital_stack' in st.session_state:
+        uses = st.session_state.capital_stack.get('uses', {})
+        
+        # If legacy purchase_price exists and new fields don't exist, migrate
+        if 'purchase_price' in uses and uses.get('purchase_price', 0.0) > 0:
+            if 'business_purchase_price' not in uses or uses.get('business_purchase_price', 0.0) == 0.0:
+                # Migrate legacy purchase_price to business_purchase_price
+                st.session_state.capital_stack['uses']['business_purchase_price'] = uses['purchase_price']
+                st.session_state.capital_stack['uses']['real_estate_purchase'] = 0.0
+        
+        # Ensure all new fields exist with defaults
+        if 'business_purchase_price' not in uses:
+            st.session_state.capital_stack['uses']['business_purchase_price'] = 0.0
+        if 'business_closing_costs' not in uses:
+            st.session_state.capital_stack['uses']['business_closing_costs'] = 0.0
+        if 'real_estate_purchase' not in uses:
+            st.session_state.capital_stack['uses']['real_estate_purchase'] = 0.0
+        if 'real_estate_closing_costs' not in uses:
+            st.session_state.capital_stack['uses']['real_estate_closing_costs'] = 0.0
     
     if 'seasonality' not in st.session_state:
         st.session_state.seasonality = {
