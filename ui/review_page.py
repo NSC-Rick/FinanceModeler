@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from engine.model import build_model
+from ui.report_view import render_report
 
 
 def render():
@@ -11,6 +12,20 @@ def render():
     st.markdown("""
     Review your complete financial model including income statement, cash flow statement, and key metrics.
     """)
+    
+    # Generate Report button
+    if st.button("📄 Generate Print Report", type="primary", help="Create a print-friendly report view"):
+        st.session_state.show_report = True
+    
+    # Show report if requested
+    if st.session_state.get('show_report', False):
+        st.divider()
+        st.markdown("## 📄 Print Report View")
+        st.caption("This view is optimized for printing or PDF export. Use your browser's print function (Ctrl+P or Cmd+P).")
+        
+        if st.button("← Back to Analysis View"):
+            st.session_state.show_report = False
+            st.rerun()
     
     model_inputs = {
         'time_mode': st.session_state.time_mode,
@@ -28,12 +43,20 @@ def render():
         'inventory_days': st.session_state.inventory_days,
         'tax_rate': st.session_state.tax_rate,
         'annual_depreciation': st.session_state.annual_depreciation,
-        'owner_compensation': st.session_state.owner_compensation
+        'owner_compensation': st.session_state.owner_compensation,
+        'mode': st.session_state.mode,
+        'capital_stack': st.session_state.capital_stack,
+        'seasonality': st.session_state.seasonality
     }
     
     try:
         with st.spinner("Building financial model..."):
             outputs = build_model(model_inputs)
+        
+        # If report view requested, render report and return
+        if st.session_state.get('show_report', False):
+            render_report(outputs, model_inputs)
+            return
         
         st.success("✅ Model built successfully!")
         

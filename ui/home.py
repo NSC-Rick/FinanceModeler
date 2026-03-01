@@ -139,6 +139,13 @@ def initialize_session_state():
                 }
             }
         }
+    
+    if 'seasonality' not in st.session_state:
+        st.session_state.seasonality = {
+            'enabled': False,
+            'mode': 'OFF',  # OFF, Retail, Custom
+            'custom_weights': [8.33] * 12  # Default to even distribution (100/12)
+        }
 
 
 def render():

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def calculate_revenue(revenue_streams, time_mode, periods):
+def calculate_revenue(revenue_streams, time_mode, periods, seasonality=None):
     """
     Calculate revenue for multiple streams over time.
     
@@ -10,6 +10,7 @@ def calculate_revenue(revenue_streams, time_mode, periods):
         revenue_streams: List of dicts with keys: name, price, volume, growth_rate, cogs_override
         time_mode: 'monthly' or 'annual'
         periods: Number of periods
+        seasonality: Optional dict with keys: enabled, mode, custom_weights
     
     Returns:
         DataFrame with period index and column per revenue stream plus total
@@ -19,6 +20,21 @@ def calculate_revenue(revenue_streams, time_mode, periods):
         return df.set_index('period')
     
     revenue_data = {'period': range(periods)}
+    
+    # Get seasonality weights
+    seasonal_weights = None
+    if seasonality and seasonality.get('enabled') and time_mode == 'monthly':
+        if seasonality['mode'] == 'Retail Preset':
+            # Retail preset weights
+            seasonal_weights = [6.5, 6.0, 7.5, 8.0, 8.5, 9.0, 9.5, 9.0, 8.0, 9.5, 11.0, 17.5]
+        elif seasonality['mode'] == 'Custom':
+            seasonal_weights = seasonality.get('custom_weights', [8.33] * 12)
+        
+        # Normalize to ensure sum = 100
+        if seasonal_weights:
+            total = sum(seasonal_weights)
+            if total > 0:
+                seasonal_weights = [w / total * 100 for w in seasonal_weights]
     
     for stream in revenue_streams:
         name = stream['name']
@@ -34,7 +50,17 @@ def calculate_revenue(revenue_streams, time_mode, periods):
             else:
                 volume = initial_volume * (1 + growth_rate) ** period
             
-            revenues.append(price * volume)
+            base_revenue = price * volume
+            
+            # Apply seasonality if enabled (monthly mode only)
+            if seasonal_weights and time_mode == 'monthly':
+                month_index = period % 12
+                # Seasonal weight is percentage of annual revenue
+                # Convert to monthly multiplier: weight / (100/12) = weight / 8.333...
+                seasonal_multiplier = seasonal_weights[month_index] / (100 / 12)
+                base_revenue *= seasonal_multiplier
+            
+            revenues.append(base_revenue)
         
         revenue_data[name] = revenues
     

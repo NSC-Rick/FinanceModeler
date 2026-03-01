@@ -47,7 +47,8 @@ def build_model(model_inputs):
     revenue_df = calculate_revenue(
         model_inputs['revenue_streams'],
         time_mode,
-        periods
+        periods,
+        model_inputs.get('seasonality')
     )
     
     cogs = calculate_cogs(

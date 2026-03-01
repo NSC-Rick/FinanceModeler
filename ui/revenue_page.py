@@ -27,6 +27,89 @@ def render():
     
     st.divider()
     
+    # Seasonality Controls
+    st.subheader("Revenue Seasonality")
+    
+    st.markdown("""
+    Apply seasonal patterns to revenue distribution across months.
+    Seasonality affects revenue timing, AR calculations, and inventory proportionally.
+    """)
+    
+    # Retail preset weights (typical retail seasonality)
+    RETAIL_PRESET = [6.5, 6.0, 7.5, 8.0, 8.5, 9.0, 9.5, 9.0, 8.0, 9.5, 11.0, 17.5]  # Sums to 100
+    
+    seasonality_mode = st.radio(
+        "Seasonality Mode",
+        ["OFF", "Retail Preset", "Custom"],
+        index=["OFF", "Retail Preset", "Custom"].index(st.session_state.seasonality['mode']),
+        horizontal=True,
+        help="OFF: Even distribution. Retail: Holiday-weighted. Custom: Define your own (Advanced mode only)"
+    )
+    
+    # Restrict Custom mode to Advanced
+    if seasonality_mode == "Custom" and st.session_state.mode == "Basic":
+        st.warning("⚠️ Custom seasonality requires Advanced mode. Switch to Advanced mode in Financing page.")
+        seasonality_mode = st.session_state.seasonality['mode']  # Revert to previous
+    
+    st.session_state.seasonality['mode'] = seasonality_mode
+    st.session_state.seasonality['enabled'] = (seasonality_mode != "OFF")
+    
+    if seasonality_mode == "Retail Preset":
+        st.info("📊 **Retail Preset Active:** Revenue weighted toward Q4 holidays (Nov: 11%, Dec: 17.5%)")
+        
+        # Show visualization
+        import pandas as pd
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        chart_data = pd.DataFrame({
+            'Month': months,
+            'Weight (%)': RETAIL_PRESET
+        })
+        st.bar_chart(chart_data.set_index('Month'))
+        
+    elif seasonality_mode == "Custom":
+        st.info("🔧 **Custom Seasonality:** Define monthly revenue weights (will auto-normalize to 100%)")
+        
+        st.markdown("**Monthly Revenue Weights (%)**")
+        
+        # Create 3 rows of 4 months each
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        custom_weights = []
+        
+        for row in range(3):
+            cols = st.columns(4)
+            for col_idx in range(4):
+                month_idx = row * 4 + col_idx
+                with cols[col_idx]:
+                    weight = st.number_input(
+                        months[month_idx],
+                        min_value=0.0,
+                        max_value=100.0,
+                        value=st.session_state.seasonality['custom_weights'][month_idx],
+                        step=0.5,
+                        key=f"season_weight_{month_idx}",
+                        help=f"Revenue weight for {months[month_idx]}"
+                    )
+                    custom_weights.append(weight)
+        
+        # Auto-normalize
+        total_weight = sum(custom_weights)
+        if total_weight > 0:
+            normalized_weights = [w / total_weight * 100 for w in custom_weights]
+            st.session_state.seasonality['custom_weights'] = normalized_weights
+            
+            st.caption(f"**Total:** {total_weight:.1f}% → Normalized to 100%")
+            
+            # Show visualization
+            chart_data = pd.DataFrame({
+                'Month': months,
+                'Weight (%)': normalized_weights
+            })
+            st.bar_chart(chart_data.set_index('Month'))
+        else:
+            st.warning("⚠️ Total weight is 0. Please enter at least one non-zero value.")
+    
+    st.divider()
+    
     st.subheader("Revenue Streams")
     
     for idx, stream in enumerate(st.session_state.revenue_streams):

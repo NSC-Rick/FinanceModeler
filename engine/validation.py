@@ -85,7 +85,12 @@ def get_default_model_inputs():
                 }
             }
         },
-        'mode': 'Basic'
+        'mode': 'Basic',
+        'seasonality': {
+            'enabled': False,
+            'mode': 'OFF',
+            'custom_weights': [8.33] * 12
+        }
     }
 
 
@@ -207,7 +212,12 @@ def session_state_to_model_inputs(session_state) -> Dict[str, Any]:
                 'seller_note': {'amount': 0.0, 'rate': 0.05, 'term': 5}
             }
         }),
-        'mode': session_state.get('mode', 'Basic')
+        'mode': session_state.get('mode', 'Basic'),
+        'seasonality': session_state.get('seasonality', {
+            'enabled': False,
+            'mode': 'OFF',
+            'custom_weights': [8.33] * 12
+        })
     }
 
 
@@ -253,3 +263,8 @@ def model_inputs_to_session_state(model_inputs: Dict[str, Any], session_state):
         }
     })
     session_state.mode = model_inputs.get('mode', 'Basic')
+    session_state.seasonality = model_inputs.get('seasonality', {
+        'enabled': False,
+        'mode': 'OFF',
+        'custom_weights': [8.33] * 12
+    })
