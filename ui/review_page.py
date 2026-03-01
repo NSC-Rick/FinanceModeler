@@ -71,6 +71,16 @@ def render():
         ])
         
         with tab1:
+            # Force scroll to top when Income Statement tab is rendered
+            st.markdown(
+                """
+                <script>
+                    window.scrollTo(0, 0);
+                </script>
+                """,
+                unsafe_allow_html=True
+            )
+            
             st.subheader("Income Statement")
             
             # Add toggle for dollar vs % of revenue view
