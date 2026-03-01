@@ -146,6 +146,25 @@ def initialize_session_state():
             'mode': 'OFF',  # OFF, Retail, Custom
             'custom_weights': [8.33] * 12  # Default to even distribution (100/12)
         }
+    
+    # Revenue input method variables
+    if 'revenue_input_method' not in st.session_state:
+        st.session_state.revenue_input_method = 'Monthly Revenue Target'
+    
+    if 'monthly_revenue' not in st.session_state:
+        st.session_state.monthly_revenue = 0.0
+    
+    if 'avg_sale' not in st.session_state:
+        st.session_state.avg_sale = 25.0
+    
+    if 'monthly_transactions' not in st.session_state:
+        st.session_state.monthly_transactions = 0.0
+    
+    if 'customers_per_day' not in st.session_state:
+        st.session_state.customers_per_day = 0.0
+    
+    if 'days_open' not in st.session_state:
+        st.session_state.days_open = 30.0
 
 
 def render():

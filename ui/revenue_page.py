@@ -110,6 +110,161 @@ def render():
     
     st.divider()
     
+    # Layered Revenue Input Methods
+    st.subheader("Revenue Input Method")
+    
+    st.markdown("""
+    Choose how you want to input revenue data. The system will back-calculate between methods when you switch.
+    """)
+    
+    # Determine available options based on mode
+    if st.session_state.mode == "Advanced":
+        input_options = ["Monthly Revenue Target", "Average Sale × Monthly Transactions", "Customers per Day × Days Open"]
+    else:
+        input_options = ["Monthly Revenue Target", "Average Sale × Monthly Transactions"]
+    
+    # Get previous method to detect changes
+    previous_method = st.session_state.revenue_input_method
+    
+    # Show selector
+    revenue_input_method = st.radio(
+        "Select Input Method",
+        input_options,
+        index=input_options.index(previous_method) if previous_method in input_options else 0,
+        horizontal=True,
+        help="Monthly: Direct revenue input. Avg×Volume: Calculate from transaction data. Customers/Day: Behavioral model (Advanced only)"
+    )
+    
+    # Back-calculation logic (ONLY on method change)
+    if revenue_input_method != previous_method:
+        # Switching FROM Monthly Revenue → Avg × Volume
+        if previous_method == "Monthly Revenue Target" and revenue_input_method == "Average Sale × Monthly Transactions":
+            if st.session_state.avg_sale > 0:
+                st.session_state.monthly_transactions = st.session_state.monthly_revenue / st.session_state.avg_sale
+        
+        # Switching FROM Avg × Volume → Monthly Revenue
+        elif previous_method == "Average Sale × Monthly Transactions" and revenue_input_method == "Monthly Revenue Target":
+            st.session_state.monthly_revenue = st.session_state.avg_sale * st.session_state.monthly_transactions
+        
+        # Switching TO Customers per Day mode
+        elif revenue_input_method == "Customers per Day × Days Open":
+            if st.session_state.days_open > 0:
+                st.session_state.customers_per_day = st.session_state.monthly_transactions / st.session_state.days_open
+        
+        # Switching FROM Customers per Day mode
+        elif previous_method == "Customers per Day × Days Open":
+            st.session_state.monthly_transactions = st.session_state.customers_per_day * st.session_state.days_open
+            # Also update monthly revenue
+            st.session_state.monthly_revenue = st.session_state.avg_sale * st.session_state.monthly_transactions
+        
+        # Update the stored method
+        st.session_state.revenue_input_method = revenue_input_method
+    
+    # Display inputs based on selected method
+    if revenue_input_method == "Monthly Revenue Target":
+        st.markdown("**Direct Monthly Revenue Input**")
+        
+        monthly_revenue = st.number_input(
+            "Monthly Revenue Target",
+            min_value=0.0,
+            value=st.session_state.monthly_revenue,
+            step=100.0,
+            format="%.2f",
+            key="monthly_revenue_input",
+            help="Target monthly revenue for this stream"
+        )
+        st.session_state.monthly_revenue = monthly_revenue
+        
+        st.info(f"💰 **Monthly Revenue:** ${monthly_revenue:,.2f}")
+    
+    elif revenue_input_method == "Average Sale × Monthly Transactions":
+        st.markdown("**Transaction-Based Revenue Calculation**")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            avg_sale = st.number_input(
+                "Average Sale Amount",
+                min_value=0.0,
+                value=st.session_state.avg_sale,
+                step=1.0,
+                format="%.2f",
+                key="avg_sale_input",
+                help="Average dollar amount per transaction"
+            )
+            st.session_state.avg_sale = avg_sale
+        
+        with col2:
+            monthly_transactions = st.number_input(
+                "Monthly Transactions",
+                min_value=0.0,
+                value=st.session_state.monthly_transactions,
+                step=1.0,
+                format="%.2f",
+                key="monthly_transactions_input",
+                help="Number of transactions per month"
+            )
+            st.session_state.monthly_transactions = monthly_transactions
+        
+        # Calculate and store monthly revenue
+        calculated_revenue = avg_sale * monthly_transactions
+        st.session_state.monthly_revenue = calculated_revenue
+        
+        st.info(f"💰 **Calculated Monthly Revenue:** ${calculated_revenue:,.2f} ({monthly_transactions:,.0f} transactions × ${avg_sale:,.2f})")
+    
+    elif revenue_input_method == "Customers per Day × Days Open":
+        st.markdown("**Behavioral Revenue Model (Advanced)**")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            customers_per_day = st.number_input(
+                "Customers per Day",
+                min_value=0.0,
+                value=st.session_state.customers_per_day,
+                step=1.0,
+                format="%.2f",
+                key="customers_per_day_input",
+                help="Average number of customers per day"
+            )
+            st.session_state.customers_per_day = customers_per_day
+            
+            days_open = st.number_input(
+                "Days Open per Month",
+                min_value=0.0,
+                max_value=31.0,
+                value=st.session_state.days_open,
+                step=1.0,
+                format="%.2f",
+                key="days_open_input",
+                help="Number of days open per month"
+            )
+            st.session_state.days_open = days_open
+        
+        with col2:
+            avg_sale = st.number_input(
+                "Average Sale Amount",
+                min_value=0.0,
+                value=st.session_state.avg_sale,
+                step=1.0,
+                format="%.2f",
+                key="avg_sale_behavioral_input",
+                help="Average dollar amount per customer"
+            )
+            st.session_state.avg_sale = avg_sale
+        
+        # Calculate monthly transactions and revenue
+        calculated_transactions = customers_per_day * days_open
+        calculated_revenue = avg_sale * calculated_transactions
+        
+        st.session_state.monthly_transactions = calculated_transactions
+        st.session_state.monthly_revenue = calculated_revenue
+        
+        st.info(f"📊 **Calculated Monthly Transactions:** {calculated_transactions:,.0f} ({customers_per_day:,.0f} customers/day × {days_open:,.0f} days)")
+        st.info(f"💰 **Calculated Monthly Revenue:** ${calculated_revenue:,.2f} ({calculated_transactions:,.0f} transactions × ${avg_sale:,.2f})")
+    
+    st.divider()
+    
     st.subheader("Revenue Streams")
     
     for idx, stream in enumerate(st.session_state.revenue_streams):

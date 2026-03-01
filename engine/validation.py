@@ -90,7 +90,13 @@ def get_default_model_inputs():
             'enabled': False,
             'mode': 'OFF',
             'custom_weights': [8.33] * 12
-        }
+        },
+        'revenue_input_method': 'Monthly Revenue Target',
+        'monthly_revenue': 0.0,
+        'avg_sale': 25.0,
+        'monthly_transactions': 0.0,
+        'customers_per_day': 0.0,
+        'days_open': 30.0
     }
 
 
@@ -217,7 +223,13 @@ def session_state_to_model_inputs(session_state) -> Dict[str, Any]:
             'enabled': False,
             'mode': 'OFF',
             'custom_weights': [8.33] * 12
-        })
+        }),
+        'revenue_input_method': session_state.get('revenue_input_method', 'Monthly Revenue Target'),
+        'monthly_revenue': session_state.get('monthly_revenue', 0.0),
+        'avg_sale': session_state.get('avg_sale', 25.0),
+        'monthly_transactions': session_state.get('monthly_transactions', 0.0),
+        'customers_per_day': session_state.get('customers_per_day', 0.0),
+        'days_open': session_state.get('days_open', 30.0)
     }
 
 
@@ -268,3 +280,9 @@ def model_inputs_to_session_state(model_inputs: Dict[str, Any], session_state):
         'mode': 'OFF',
         'custom_weights': [8.33] * 12
     })
+    session_state.revenue_input_method = model_inputs.get('revenue_input_method', 'Monthly Revenue Target')
+    session_state.monthly_revenue = model_inputs.get('monthly_revenue', 0.0)
+    session_state.avg_sale = model_inputs.get('avg_sale', 25.0)
+    session_state.monthly_transactions = model_inputs.get('monthly_transactions', 0.0)
+    session_state.customers_per_day = model_inputs.get('customers_per_day', 0.0)
+    session_state.days_open = model_inputs.get('days_open', 30.0)
