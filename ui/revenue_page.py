@@ -1,5 +1,5 @@
 import streamlit as st
-
+import pandas as pd
 
 def render():
     """Render the revenue configuration page."""
