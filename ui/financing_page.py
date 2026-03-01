@@ -10,6 +10,18 @@ def render():
     The loan amortization will be calculated automatically.
     """)
     
+    # Mode Toggle
+    st.session_state.mode = st.radio(
+        "Model Mode",
+        ["Basic", "Advanced"],
+        index=0 if st.session_state.mode == "Basic" else 1,
+        horizontal=True,
+        help="Advanced mode unlocks working capital and capital stack controls"
+    )
+    
+    if st.session_state.mode == "Advanced":
+        st.info("🔧 **Advanced Mode Active:** Capital Stack and Working Capital controls are available below.")
+    
     st.divider()
     
     # Capital Stack Advisory Layer (Collapsible)

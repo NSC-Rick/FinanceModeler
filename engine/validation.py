@@ -84,7 +84,8 @@ def get_default_model_inputs():
                     'term': 5
                 }
             }
-        }
+        },
+        'mode': 'Basic'
     }
 
 
@@ -205,7 +206,8 @@ def session_state_to_model_inputs(session_state) -> Dict[str, Any]:
                 'bank_loan': {'amount': 0.0, 'rate': 0.06, 'term': 10},
                 'seller_note': {'amount': 0.0, 'rate': 0.05, 'term': 5}
             }
-        })
+        }),
+        'mode': session_state.get('mode', 'Basic')
     }
 
 
@@ -250,3 +252,4 @@ def model_inputs_to_session_state(model_inputs: Dict[str, Any], session_state):
             'seller_note': {'amount': 0.0, 'rate': 0.05, 'term': 5}
         }
     })
+    session_state.mode = model_inputs.get('mode', 'Basic')

@@ -89,14 +89,17 @@ def initialize_session_state():
     if 'loan_start_period' not in st.session_state:
         st.session_state.loan_start_period = 0
     
+    if 'mode' not in st.session_state:
+        st.session_state.mode = 'Basic'
+    
     if 'ar_days' not in st.session_state:
-        st.session_state.ar_days = 30
+        st.session_state.ar_days = 0
     
     if 'ap_days' not in st.session_state:
-        st.session_state.ap_days = 30
+        st.session_state.ap_days = 0
     
     if 'inventory_days' not in st.session_state:
-        st.session_state.inventory_days = 30
+        st.session_state.inventory_days = 0
     
     if 'tax_rate' not in st.session_state:
         st.session_state.tax_rate = 0.25
