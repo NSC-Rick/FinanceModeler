@@ -360,48 +360,199 @@ def render():
     
     st.divider()
     
-    st.subheader("Term Loan")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        loan_principal = st.number_input(
-            "Loan Principal",
-            min_value=0.0,
-            value=st.session_state.loan_principal,
-            step=1000.0,
-            key="loan_principal_input",
-            help="Total loan amount"
-        )
-        st.session_state.loan_principal = loan_principal
+    # Mode-aware loan structure
+    if st.session_state.mode == "Advanced":
+        # Dual Loan Structure (Advanced Mode)
+        st.subheader("Debt Structure")
         
-        loan_annual_rate = st.number_input(
-            "Annual Interest Rate",
-            min_value=0.0,
-            max_value=1.0,
-            value=st.session_state.loan_annual_rate,
-            step=0.001,
-            format="%.3f",
-            key="loan_rate_input",
-            help="Annual interest rate (e.g., 0.06 = 6%)"
-        )
-        st.session_state.loan_annual_rate = loan_annual_rate
-    
-    with col2:
-        loan_term_months = st.number_input(
-            "Loan Term (Months)",
-            min_value=1,
-            value=st.session_state.loan_term_months,
-            step=12,
-            key="loan_term_input",
-            help="Loan term in months"
-        )
-        st.session_state.loan_term_months = loan_term_months
+        st.markdown("""
+        Configure separate loans for business and real estate components.
+        Manual entry only - no auto-sizing.
+        """)
         
-        max_start_period = st.session_state.periods - 1
-        loan_start_period = st.number_input(
-            "Start Period (0-indexed)",
-            min_value=0,
+        # Business Loan Section
+        st.markdown("### 💼 Business Loan")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            business_loan_amount = st.number_input(
+                "Business Loan Amount",
+                min_value=0.0,
+                value=st.session_state.business_loan_amount,
+                step=1000.0,
+                key="business_loan_amount_input",
+                help="Loan amount for business acquisition"
+            )
+            st.session_state.business_loan_amount = business_loan_amount
+        
+        with col2:
+            business_interest_rate = st.number_input(
+                "Business Interest Rate",
+                min_value=0.0,
+                max_value=1.0,
+                value=st.session_state.business_interest_rate,
+                step=0.001,
+                format="%.3f",
+                key="business_interest_rate_input",
+                help="Annual interest rate (e.g., 0.06 = 6%)"
+            )
+            st.session_state.business_interest_rate = business_interest_rate
+        
+        with col3:
+            business_amort_years = st.number_input(
+                "Business Amortization (Years)",
+                min_value=1,
+                max_value=30,
+                value=st.session_state.business_amort_years,
+                step=1,
+                key="business_amort_years_input",
+                help="Amortization period in years"
+            )
+            st.session_state.business_amort_years = business_amort_years
+        
+        # Calculate business loan payment
+        if business_loan_amount > 0 and business_interest_rate > 0:
+            monthly_rate = business_interest_rate / 12
+            num_payments = business_amort_years * 12
+            business_monthly_payment = business_loan_amount * (monthly_rate * (1 + monthly_rate)**num_payments) / ((1 + monthly_rate)**num_payments - 1)
+        else:
+            business_monthly_payment = 0.0
+        
+        st.info(f"**Business Loan Monthly Payment:** ${business_monthly_payment:,.2f}")
+        
+        st.divider()
+        
+        # Real Estate Loan Section
+        st.markdown("### 🏢 Real Estate Loan")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            real_estate_loan_amount = st.number_input(
+                "Real Estate Loan Amount",
+                min_value=0.0,
+                value=st.session_state.real_estate_loan_amount,
+                step=1000.0,
+                key="real_estate_loan_amount_input",
+                help="Loan amount for real estate purchase"
+            )
+            st.session_state.real_estate_loan_amount = real_estate_loan_amount
+        
+        with col2:
+            real_estate_interest_rate = st.number_input(
+                "Real Estate Interest Rate",
+                min_value=0.0,
+                max_value=1.0,
+                value=st.session_state.real_estate_interest_rate,
+                step=0.001,
+                format="%.3f",
+                key="real_estate_interest_rate_input",
+                help="Annual interest rate (e.g., 0.06 = 6%)"
+            )
+            st.session_state.real_estate_interest_rate = real_estate_interest_rate
+        
+        with col3:
+            real_estate_amort_years = st.number_input(
+                "Real Estate Amortization (Years)",
+                min_value=1,
+                max_value=30,
+                value=st.session_state.real_estate_amort_years,
+                step=1,
+                key="real_estate_amort_years_input",
+                help="Amortization period in years"
+            )
+            st.session_state.real_estate_amort_years = real_estate_amort_years
+        
+        # Calculate real estate loan payment
+        if real_estate_loan_amount > 0 and real_estate_interest_rate > 0:
+            monthly_rate = real_estate_interest_rate / 12
+            num_payments = real_estate_amort_years * 12
+            real_estate_monthly_payment = real_estate_loan_amount * (monthly_rate * (1 + monthly_rate)**num_payments) / ((1 + monthly_rate)**num_payments - 1)
+        else:
+            real_estate_monthly_payment = 0.0
+        
+        st.info(f"**Real Estate Loan Monthly Payment:** ${real_estate_monthly_payment:,.2f}")
+        
+        st.divider()
+        
+        # Total Debt Service
+        total_monthly_payment = business_monthly_payment + real_estate_monthly_payment
+        total_loan_amount = business_loan_amount + real_estate_loan_amount
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("**Total Loan Amount**", f"${total_loan_amount:,.2f}")
+        
+        with col2:
+            st.metric("**Total Monthly Debt Service**", f"${total_monthly_payment:,.2f}")
+        
+        # Update legacy loan_principal for compatibility with existing model
+        st.session_state.loan_principal = total_loan_amount
+        if total_loan_amount > 0:
+            # Weighted average interest rate
+            if business_loan_amount > 0 and real_estate_loan_amount > 0:
+                weighted_rate = (business_loan_amount * business_interest_rate + real_estate_loan_amount * real_estate_interest_rate) / total_loan_amount
+            elif business_loan_amount > 0:
+                weighted_rate = business_interest_rate
+            else:
+                weighted_rate = real_estate_interest_rate
+            st.session_state.loan_annual_rate = weighted_rate
+            
+            # Weighted average term
+            if business_loan_amount > 0 and real_estate_loan_amount > 0:
+                weighted_term = (business_loan_amount * business_amort_years + real_estate_loan_amount * real_estate_amort_years) / total_loan_amount
+            elif business_loan_amount > 0:
+                weighted_term = business_amort_years
+            else:
+                weighted_term = real_estate_amort_years
+            st.session_state.loan_term_months = int(weighted_term * 12)
+    
+    else:
+        # Single Loan Structure (Basic Mode)
+        st.subheader("Term Loan")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            loan_principal = st.number_input(
+                "Loan Principal",
+                min_value=0.0,
+                value=st.session_state.loan_principal,
+                step=1000.0,
+                key="loan_principal_input",
+                help="Total loan amount"
+            )
+            st.session_state.loan_principal = loan_principal
+            
+            loan_annual_rate = st.number_input(
+                "Annual Interest Rate",
+                min_value=0.0,
+                max_value=1.0,
+                value=st.session_state.loan_annual_rate,
+                step=0.001,
+                format="%.3f",
+                key="loan_rate_input",
+                help="Annual interest rate (e.g., 0.06 = 6%)"
+            )
+            st.session_state.loan_annual_rate = loan_annual_rate
+        
+        with col2:
+            loan_term_months = st.number_input(
+                "Loan Term (Months)",
+                min_value=1,
+                value=st.session_state.loan_term_months,
+                step=12,
+                key="loan_term_input",
+                help="Loan term in months"
+            )
+            st.session_state.loan_term_months = loan_term_months
+            
+            max_start_period = st.session_state.periods - 1
+            loan_start_period = st.number_input(
+                "Start Period (0-indexed)",
+                min_value=0,
             max_value=max_start_period,
             value=min(st.session_state.loan_start_period, max_start_period),
             step=1,

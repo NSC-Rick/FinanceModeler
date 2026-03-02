@@ -51,6 +51,13 @@ def get_default_model_inputs():
         'loan_annual_rate': 0.06,
         'loan_term_months': 60,
         'loan_start_period': 0,
+        # Dual loan structure (Advanced mode)
+        'business_loan_amount': 0.0,
+        'business_interest_rate': 0.06,
+        'business_amort_years': 5,
+        'real_estate_loan_amount': 0.0,
+        'real_estate_interest_rate': 0.06,
+        'real_estate_amort_years': 10,
         'ar_days': 30,
         'ap_days': 30,
         'inventory_days': 30,
@@ -203,6 +210,13 @@ def session_state_to_model_inputs(session_state) -> Dict[str, Any]:
         'loan_annual_rate': session_state.get('loan_annual_rate', 0.0),
         'loan_term_months': session_state.get('loan_term_months', 60),
         'loan_start_period': session_state.get('loan_start_period', 0),
+        # Dual loan structure (Advanced mode)
+        'business_loan_amount': session_state.get('business_loan_amount', 0.0),
+        'business_interest_rate': session_state.get('business_interest_rate', 0.06),
+        'business_amort_years': session_state.get('business_amort_years', 5),
+        'real_estate_loan_amount': session_state.get('real_estate_loan_amount', 0.0),
+        'real_estate_interest_rate': session_state.get('real_estate_interest_rate', 0.06),
+        'real_estate_amort_years': session_state.get('real_estate_amort_years', 10),
         'ar_days': session_state.get('ar_days', 30),
         'ap_days': session_state.get('ap_days', 30),
         'inventory_days': session_state.get('inventory_days', 30),
@@ -263,6 +277,21 @@ def model_inputs_to_session_state(model_inputs: Dict[str, Any], session_state):
     session_state.loan_annual_rate = model_inputs['loan_annual_rate']
     session_state.loan_term_months = model_inputs['loan_term_months']
     session_state.loan_start_period = model_inputs['loan_start_period']
+    
+    # Dual loan structure (Advanced mode)
+    session_state.business_loan_amount = model_inputs.get('business_loan_amount', 0.0)
+    session_state.business_interest_rate = model_inputs.get('business_interest_rate', 0.06)
+    session_state.business_amort_years = model_inputs.get('business_amort_years', 5)
+    session_state.real_estate_loan_amount = model_inputs.get('real_estate_loan_amount', 0.0)
+    session_state.real_estate_interest_rate = model_inputs.get('real_estate_interest_rate', 0.06)
+    session_state.real_estate_amort_years = model_inputs.get('real_estate_amort_years', 10)
+    
+    # Backward compatibility migration: map legacy loan_principal to business_loan_amount
+    if session_state.loan_principal > 0 and session_state.business_loan_amount == 0.0:
+        session_state.business_loan_amount = session_state.loan_principal
+        session_state.business_interest_rate = session_state.loan_annual_rate
+        session_state.business_amort_years = session_state.loan_term_months / 12
+    
     session_state.ar_days = model_inputs['ar_days']
     session_state.ap_days = model_inputs['ap_days']
     session_state.inventory_days = model_inputs['inventory_days']

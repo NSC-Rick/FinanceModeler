@@ -77,6 +77,7 @@ def initialize_session_state():
             if 'category' not in item:
                 item['category'] = 'fixed'
     
+    # Legacy single loan (preserved for backward compatibility and Basic mode)
     if 'loan_principal' not in st.session_state:
         st.session_state.loan_principal = 50000.0
     
@@ -88,6 +89,31 @@ def initialize_session_state():
     
     if 'loan_start_period' not in st.session_state:
         st.session_state.loan_start_period = 0
+    
+    # Dual loan structure (Advanced mode only)
+    if 'business_loan_amount' not in st.session_state:
+        st.session_state.business_loan_amount = 0.0
+    
+    if 'business_interest_rate' not in st.session_state:
+        st.session_state.business_interest_rate = 0.06
+    
+    if 'business_amort_years' not in st.session_state:
+        st.session_state.business_amort_years = 5
+    
+    if 'real_estate_loan_amount' not in st.session_state:
+        st.session_state.real_estate_loan_amount = 0.0
+    
+    if 'real_estate_interest_rate' not in st.session_state:
+        st.session_state.real_estate_interest_rate = 0.06
+    
+    if 'real_estate_amort_years' not in st.session_state:
+        st.session_state.real_estate_amort_years = 10
+    
+    # Backward compatibility migration: map legacy loan_principal to business_loan_amount
+    if st.session_state.loan_principal > 0 and st.session_state.business_loan_amount == 0.0:
+        st.session_state.business_loan_amount = st.session_state.loan_principal
+        st.session_state.business_interest_rate = st.session_state.loan_annual_rate
+        st.session_state.business_amort_years = st.session_state.loan_term_months / 12
     
     if 'mode' not in st.session_state:
         st.session_state.mode = 'Basic'
