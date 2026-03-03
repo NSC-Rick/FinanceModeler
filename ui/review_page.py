@@ -53,6 +53,40 @@ def render():
         with st.spinner("Building financial model..."):
             outputs = build_model(model_inputs)
         
+        # Store summary metrics in session_state for Modeler page
+        income_statement = outputs['income_statement']
+        loan_schedule = outputs['loan_schedule']
+        kpis = outputs['kpis']
+        
+        # Calculate Year 1 metrics
+        if st.session_state.time_mode == 'monthly':
+            year1_periods = min(12, len(income_statement))
+            year1_revenue = income_statement['revenue'][:year1_periods].sum()
+            year1_operating_expenses = income_statement['operating_expenses'][:year1_periods].sum()
+            year1_net_income = income_statement['net_income'][:year1_periods].sum()
+            year1_debt_service = loan_schedule['payment'][:year1_periods].sum()
+            year1_cash_flow = year1_net_income - year1_debt_service
+            year1_ebitda = income_statement['ebitda'][:year1_periods].sum()
+            year1_dscr = year1_ebitda / year1_debt_service if year1_debt_service > 0 else 0
+        else:
+            year1_revenue = income_statement['revenue'].iloc[0]
+            year1_operating_expenses = income_statement['operating_expenses'].iloc[0]
+            year1_net_income = income_statement['net_income'].iloc[0]
+            year1_debt_service = loan_schedule['payment'].iloc[0]
+            year1_cash_flow = year1_net_income - year1_debt_service
+            year1_ebitda = income_statement['ebitda'].iloc[0]
+            year1_dscr = year1_ebitda / year1_debt_service if year1_debt_service > 0 else 0
+        
+        # Store in session_state for Modeler
+        st.session_state.review_summary_metrics = {
+            'year1_revenue': year1_revenue,
+            'year1_operating_expenses': year1_operating_expenses,
+            'year1_net_income': year1_net_income,
+            'year1_debt_service': year1_debt_service,
+            'year1_cash_flow': year1_cash_flow,
+            'year1_dscr': year1_dscr
+        }
+        
         # If report view requested, render report and return
         if st.session_state.get('show_report', False):
             render_report(outputs, model_inputs)
