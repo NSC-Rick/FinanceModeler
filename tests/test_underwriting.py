@@ -269,13 +269,13 @@ def test_owner_distribution_annual_calculation():
 
 
 def test_dscr_zero_debt_service():
-    """Test that DSCR is zero when debt service is zero."""
+    """Test that DSCR is None when debt service is zero (debt-free scenario)."""
     ebitda = pd.Series([10000, 20000, 30000], index=range(3))
     debt_service = pd.Series([0, 0, 0], index=range(3))
     
     dscr = calculate_dscr(ebitda, debt_service, 'monthly')
     
-    assert (dscr == 0).all()
+    assert dscr.isna().all()  # All values should be None
 
 
 def test_break_even_zero_contribution_margin():

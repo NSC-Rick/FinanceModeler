@@ -36,12 +36,13 @@ def render():
         
         # Get first period metrics for evaluation
         first_period_kpis = kpis.iloc[0]
-        dscr = first_period_kpis.get('dscr', 0)
+        dscr = first_period_kpis.get('dscr', None)  # None if debt-free
         gross_margin_pct = first_period_kpis.get('gross_margin_pct', 0) / 100  # Convert to decimal
         
         # Calculate cash after debt and owner
         net_income = income_statement['net_income'].iloc[0]
         debt_service = loan_schedule['payment'].iloc[0]
+        total_debt_service = loan_schedule['payment'].sum()  # Check if any debt exists
         cash_after_debt = net_income - debt_service
         
         owner_comp_config = model_inputs.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0})
@@ -135,8 +136,8 @@ def render():
         # ========================================
         red_flags = []
         
-        # Rule: DSCR < 1.0
-        if dscr < 1.0:
+        # Rule: DSCR < 1.0 (only if debt exists)
+        if total_debt_service > 0 and dscr is not None and dscr < 1.0:
             red_flags.append(f"DSCR below 1.0 (current: {dscr:.2f}). Debt service exceeds available cash flow.")
         
         # Rule: Cash after debt and owner < 0
@@ -159,8 +160,8 @@ def render():
         # ========================================
         yellow_flags = []
         
-        # Rule: 1.0 <= DSCR < 1.20
-        if 1.0 <= dscr < 1.20:
+        # Rule: 1.0 <= DSCR < 1.20 (only if debt exists)
+        if total_debt_service > 0 and dscr is not None and 1.0 <= dscr < 1.20:
             yellow_flags.append(f"DSCR between 1.0 and 1.20 (current: {dscr:.2f}). Minimal debt service coverage.")
         
         # Rule: Rent / Revenue > 0.12
@@ -180,8 +181,10 @@ def render():
         # ========================================
         green_signals = []
         
-        # Rule: DSCR >= 1.25
-        if dscr >= 1.25:
+        # Rule: DSCR >= 1.25 or Debt Free
+        if total_debt_service == 0:
+            green_signals.append(f"Debt Free. No debt service obligations.")
+        elif dscr is not None and dscr >= 1.25:
             green_signals.append(f"DSCR at or above 1.25 (current: {dscr:.2f}). Strong debt service coverage.")
         
         # Rule: Cash after debt and owner >= 0

@@ -111,9 +111,12 @@ def render():
     # Calculate adjusted DSCR
     # DSCR = (EBITDA + adjustments) / debt service
     # EBITDA changes by revenue impact - expense delta
-    ebitda_delta = revenue_impact - expense_delta
-    adj_ebitda = (base_dscr * base_debt_service) + ebitda_delta  # Back-calculate base EBITDA, then adjust
-    adj_dscr = adj_ebitda / base_debt_service if base_debt_service > 0 else 0
+    if base_debt_service > 0 and base_dscr is not None:
+        ebitda_delta = revenue_impact - expense_delta
+        adj_ebitda = (base_dscr * base_debt_service) + ebitda_delta  # Back-calculate base EBITDA, then adjust
+        adj_dscr = adj_ebitda / base_debt_service
+    else:
+        adj_dscr = None  # Debt-free
     
     # ========================================
     # DISPLAY: BASE CASE vs MODELED CASE
@@ -129,7 +132,7 @@ def render():
         st.metric("Revenue", f"${base_revenue:,.2f}")
         st.metric("Net Income", f"${base_net_income:,.2f}")
         st.metric("Cash Flow", f"${base_cash_flow:,.2f}")
-        st.metric("DSCR", f"{base_dscr:.2f}")
+        st.metric("DSCR", "—" if base_dscr is None else f"{base_dscr:.2f}")
     
     with col2:
         st.markdown("**Modeled Case (Year 1)**")
@@ -147,8 +150,11 @@ def render():
         st.metric("Cash Flow", f"${adj_cash_flow:,.2f}", delta=f"${cf_delta:,.2f}")
         
         # DSCR with delta
-        dscr_delta = adj_dscr - base_dscr
-        st.metric("DSCR", f"{adj_dscr:.2f}", delta=f"{dscr_delta:+.2f}")
+        if adj_dscr is None:
+            st.metric("DSCR", "—")
+        else:
+            dscr_delta = adj_dscr - base_dscr if base_dscr is not None else 0
+            st.metric("DSCR", f"{adj_dscr:.2f}", delta=f"{dscr_delta:+.2f}")
     
     st.divider()
     
@@ -180,7 +186,9 @@ def render():
     
     with col3:
         st.markdown("**DSCR Status**")
-        if adj_dscr >= 1.25:
+        if adj_dscr is None:
+            st.success(f"🟢 Debt Free")
+        elif adj_dscr >= 1.25:
             st.success(f"🟢 {adj_dscr:.2f} (Strong)")
         elif adj_dscr >= 1.0:
             st.warning(f"🟡 {adj_dscr:.2f} (Marginal)")

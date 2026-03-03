@@ -67,7 +67,7 @@ def render():
             year1_debt_service = loan_schedule['payment'][:year1_periods].sum()
             year1_cash_flow = year1_net_income - year1_debt_service
             year1_ebitda = income_statement['ebitda'][:year1_periods].sum()
-            year1_dscr = year1_ebitda / year1_debt_service if year1_debt_service > 0 else 0
+            year1_dscr = year1_ebitda / year1_debt_service if year1_debt_service > 0 else None
         else:
             year1_revenue = income_statement['revenue'].iloc[0]
             year1_operating_expenses = income_statement['operating_expenses'].iloc[0]
@@ -75,7 +75,7 @@ def render():
             year1_debt_service = loan_schedule['payment'].iloc[0]
             year1_cash_flow = year1_net_income - year1_debt_service
             year1_ebitda = income_statement['ebitda'].iloc[0]
-            year1_dscr = year1_ebitda / year1_debt_service if year1_debt_service > 0 else 0
+            year1_dscr = year1_ebitda / year1_debt_service if year1_debt_service > 0 else None
         
         # Store in session_state for Modeler
         st.session_state.review_summary_metrics = {
@@ -327,18 +327,35 @@ def render():
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                avg_dscr = kpis[kpis['dscr'] > 0]['dscr'].mean() if (kpis['dscr'] > 0).any() else 0
-                st.metric(
-                    label="⭐ Average DSCR",
-                    value=f"{avg_dscr:.2f}",
-                    help="Debt Service Coverage Ratio = EBITDA / Total Debt Service. Lenders typically require 1.25+"
-                )
-                if avg_dscr >= 1.25:
-                    st.success("✅ Strong debt coverage")
-                elif avg_dscr >= 1.0:
-                    st.warning("⚠️ Marginal debt coverage")
+                # Check if there's any debt service
+                total_debt_service = kpis['debt_service'].sum()
+                
+                if total_debt_service == 0:
+                    # Debt-free scenario
+                    st.metric(
+                        label="⭐ Average DSCR",
+                        value="—",
+                        help="Debt Service Coverage Ratio = EBITDA / Total Debt Service. No debt obligations."
+                    )
+                    st.success("🟢 Debt Free")
+                    st.caption("No debt obligations")
                 else:
-                    st.error("❌ Insufficient debt coverage")
+                    # Calculate average DSCR (excluding None values)
+                    dscr_values = kpis['dscr'].dropna()
+                    avg_dscr = dscr_values.mean() if len(dscr_values) > 0 else 0
+                    
+                    st.metric(
+                        label="⭐ Average DSCR",
+                        value=f"{avg_dscr:.2f}",
+                        help="Debt Service Coverage Ratio = EBITDA / Total Debt Service. Lenders typically require 1.25+"
+                    )
+                    
+                    if avg_dscr >= 1.25:
+                        st.success("✅ Strong debt coverage")
+                    elif avg_dscr >= 1.0:
+                        st.warning("⚠️ Marginal debt coverage")
+                    else:
+                        st.error("❌ Insufficient debt coverage")
             
             with col2:
                 if 'break_even_revenue' in kpis.columns:

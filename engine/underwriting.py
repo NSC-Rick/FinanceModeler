@@ -14,15 +14,15 @@ def calculate_dscr(ebitda, debt_service, time_mode):
         time_mode: 'monthly' or 'annual'
     
     Returns:
-        Series of DSCR per period
+        Series of DSCR per period (None when debt service is 0)
     """
-    dscr = pd.Series(0.0, index=ebitda.index)
+    dscr = pd.Series(None, index=ebitda.index, dtype='object')
     
     for i in ebitda.index:
         if debt_service.iloc[i] > 0:
             dscr.iloc[i] = ebitda.iloc[i] / debt_service.iloc[i]
         else:
-            dscr.iloc[i] = 0
+            dscr.iloc[i] = None
     
     return dscr
 
@@ -38,7 +38,7 @@ def calculate_annual_dscr(ebitda, debt_service, time_mode, periods):
         periods: Number of periods
     
     Returns:
-        Float representing annual DSCR
+        Float representing annual DSCR (None when debt service is 0)
     """
     if time_mode == 'monthly':
         annual_ebitda = ebitda.sum()
@@ -50,7 +50,7 @@ def calculate_annual_dscr(ebitda, debt_service, time_mode, periods):
     if annual_debt_service > 0:
         return annual_ebitda / annual_debt_service
     else:
-        return 0.0
+        return None
 
 
 def calculate_contribution_margin(revenue, variable_costs):
