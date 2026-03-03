@@ -220,6 +220,16 @@ def initialize_session_state():
     
     if 'days_open' not in st.session_state:
         st.session_state.days_open = 30.0
+    
+    # Modeler variables (persist during session, NOT saved to JSON)
+    if 'modeler_revenue_adj' not in st.session_state:
+        st.session_state.modeler_revenue_adj = 0.0
+    
+    if 'modeler_expense_adj' not in st.session_state:
+        st.session_state.modeler_expense_adj = 0.0
+    
+    if 'modeler_scope' not in st.session_state:
+        st.session_state.modeler_scope = "Year 1 Only"
 
 
 def render():
