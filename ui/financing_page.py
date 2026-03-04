@@ -205,7 +205,7 @@ def render():
                     "Bank Term (Years)",
                     min_value=1,
                     max_value=30,
-                    value=st.session_state.capital_stack['sources']['bank_loan']['term'],
+                    value=int(st.session_state.capital_stack['sources']['bank_loan']['term']),
                     step=1,
                     key="cs_bank_term",
                     help="Loan term in years"
@@ -237,7 +237,7 @@ def render():
                     "Seller Note Term (Years)",
                     min_value=1,
                     max_value=30,
-                    value=st.session_state.capital_stack['sources']['seller_note']['term'],
+                    value=int(st.session_state.capital_stack['sources']['seller_note']['term']),
                     step=1,
                     key="cs_seller_term",
                     help="Loan term in years"
@@ -404,7 +404,7 @@ def render():
                 "Business Amortization (Years)",
                 min_value=1,
                 max_value=30,
-                value=st.session_state.business_amort_years,
+                value=int(st.session_state.business_amort_years),
                 step=1,
                 key="business_amort_years_input",
                 help="Amortization period in years"
@@ -457,7 +457,7 @@ def render():
                 "Real Estate Amortization (Years)",
                 min_value=1,
                 max_value=30,
-                value=st.session_state.real_estate_amort_years,
+                value=int(st.session_state.real_estate_amort_years),
                 step=1,
                 key="real_estate_amort_years_input",
                 help="Amortization period in years"
@@ -542,7 +542,7 @@ def render():
             loan_term_months = st.number_input(
                 "Loan Term (Months)",
                 min_value=1,
-                value=st.session_state.loan_term_months,
+                value=int(st.session_state.loan_term_months),
                 step=12,
                 key="loan_term_input",
                 help="Loan term in months"
@@ -553,12 +553,12 @@ def render():
             loan_start_period = st.number_input(
                 "Start Period (0-indexed)",
                 min_value=0,
-            max_value=max_start_period,
-            value=min(st.session_state.loan_start_period, max_start_period),
-            step=1,
-            key="loan_start_input",
-            help="Period when loan disbursement occurs (0 = first period)"
-        )
+                max_value=max_start_period,
+                value=int(min(st.session_state.loan_start_period, max_start_period)),
+                step=1,
+                key="loan_start_input",
+                help="Period when loan disbursement occurs (0 = first period)"
+            )
         st.session_state.loan_start_period = loan_start_period
     
     if loan_principal > 0 and loan_annual_rate > 0:
@@ -662,7 +662,7 @@ def render():
         ar_days = st.number_input(
             "Accounts Receivable Days",
             min_value=0,
-            value=st.session_state.ar_days,
+            value=int(st.session_state.ar_days),
             step=1,
             key="ar_days_input",
             help="Average days to collect payment from customers"
@@ -673,7 +673,7 @@ def render():
         ap_days = st.number_input(
             "Accounts Payable Days",
             min_value=0,
-            value=st.session_state.ap_days,
+            value=int(st.session_state.ap_days),
             step=1,
             key="ap_days_input",
             help="Average days to pay suppliers"
@@ -684,7 +684,7 @@ def render():
         inventory_days = st.number_input(
             "Inventory Days",
             min_value=0,
-            value=st.session_state.inventory_days,
+            value=int(st.session_state.inventory_days),
             step=1,
             key="inventory_days_input",
             help="Average days inventory is held"
