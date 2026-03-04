@@ -466,39 +466,86 @@ def _write_kpis_sheet(writer, kpis_df):
 
 def _write_capital_stack_sheet(writer, capital_stack):
     """Write capital stack sheet from model inputs."""
-    # Build capital stack DataFrame
-    stack_data = []
+    # Build capital stack rows
+    rows = []
     
     # Uses section
     if 'uses' in capital_stack:
-        stack_data.append(['USES', ''])
-        for use_item in capital_stack['uses']:
-            stack_data.append([
-                use_item.get('name', 'Unnamed'),
-                use_item.get('amount', 0.0)
-            ])
-        total_uses = sum(item.get('amount', 0.0) for item in capital_stack['uses'])
-        stack_data.append(['Total Uses', total_uses])
-        stack_data.append(['', ''])
+        uses = capital_stack['uses']
+        if isinstance(uses, dict):
+            # Handle dictionary structure (key: value)
+            for name, amount in uses.items():
+                rows.append({
+                    'Category': 'Use',
+                    'Name': name.replace('_', ' ').title(),
+                    'Amount': amount
+                })
+            total_uses = sum(uses.values())
+        else:
+            # Handle list structure (legacy)
+            for use_item in uses:
+                rows.append({
+                    'Category': 'Use',
+                    'Name': use_item.get('name', 'Unnamed'),
+                    'Amount': use_item.get('amount', 0.0)
+                })
+            total_uses = sum(item.get('amount', 0.0) for item in uses)
+        
+        rows.append({
+            'Category': 'Use',
+            'Name': 'Total Uses',
+            'Amount': total_uses
+        })
     
     # Sources section
     if 'sources' in capital_stack:
-        stack_data.append(['SOURCES', ''])
-        for source_item in capital_stack['sources']:
-            stack_data.append([
-                source_item.get('name', 'Unnamed'),
-                source_item.get('amount', 0.0)
-            ])
-        total_sources = sum(item.get('amount', 0.0) for item in capital_stack['sources'])
-        stack_data.append(['Total Sources', total_sources])
+        sources = capital_stack['sources']
+        if isinstance(sources, dict):
+            # Handle dictionary structure (key: value or key: {amount: value})
+            for name, value in sources.items():
+                if isinstance(value, dict):
+                    amount = value.get('amount', 0)
+                else:
+                    amount = value
+                
+                rows.append({
+                    'Category': 'Source',
+                    'Name': name.replace('_', ' ').title(),
+                    'Amount': amount
+                })
+            
+            # Calculate total sources
+            total_sources = 0
+            for value in sources.values():
+                if isinstance(value, dict):
+                    total_sources += value.get('amount', 0)
+                else:
+                    total_sources += value
+        else:
+            # Handle list structure (legacy)
+            for source_item in sources:
+                rows.append({
+                    'Category': 'Source',
+                    'Name': source_item.get('name', 'Unnamed'),
+                    'Amount': source_item.get('amount', 0.0)
+                })
+            total_sources = sum(item.get('amount', 0.0) for item in sources)
+        
+        rows.append({
+            'Category': 'Source',
+            'Name': 'Total Sources',
+            'Amount': total_sources
+        })
     
-    df = pd.DataFrame(stack_data, columns=['Item', 'Amount'])
+    # Create DataFrame
+    df = pd.DataFrame(rows)
     safe_to_excel(df, writer, 'Capital_Stack', index=False)
     
     # Auto-adjust column widths
     worksheet = writer.sheets['Capital_Stack']
-    worksheet.column_dimensions['A'].width = 30
-    worksheet.column_dimensions['B'].width = 20
+    worksheet.column_dimensions['A'].width = 15
+    worksheet.column_dimensions['B'].width = 30
+    worksheet.column_dimensions['C'].width = 20
 
 
 def _write_raw_json_sheet(writer, model_inputs):
