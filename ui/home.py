@@ -7,6 +7,7 @@ from engine.validation import (
     session_state_to_model_inputs,
     model_inputs_to_session_state
 )
+from config.version import PLATFORM_VERSION, BUILD_DATE
 
 # Check if openpyxl is available for Excel export
 try:
@@ -311,8 +312,10 @@ def render():
         
         model_inputs = session_state_to_model_inputs(st.session_state)
         
-        # Add scenario name to model inputs for Excel export
+        # Add scenario name, platform version, and build date to model inputs for exports
         model_inputs['scenario_name'] = scenario_name
+        model_inputs['platform_version'] = PLATFORM_VERSION
+        model_inputs['build_date'] = BUILD_DATE
         
         # Sanitize filename: replace spaces with underscores, remove special chars
         safe_name = scenario_name.strip().replace(" ", "_")

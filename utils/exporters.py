@@ -6,6 +6,7 @@ import pandas as pd
 from io import BytesIO
 from datetime import datetime
 from typing import Optional, Union
+from config.version import PLATFORM_VERSION, BUILD_DATE
 
 # Check for openpyxl availability
 try:
@@ -13,6 +14,28 @@ try:
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
+
+
+def sanitize_excel_columns(df):
+    """
+    Ensure all DataFrame column names are Excel-safe strings.
+    Removes problematic characters and converts non-string labels.
+    
+    Args:
+        df: DataFrame with potentially invalid column names
+    
+    Returns:
+        DataFrame with sanitized column names
+    """
+    df.columns = [
+        str(col)
+        .replace("[", "")
+        .replace("]", "")
+        .replace("{", "")
+        .replace("}", "")
+        for col in df.columns
+    ]
+    return df
 
 
 def export_scenario_to_excel(
@@ -237,6 +260,8 @@ def _write_scenario_sheet(writer, model_inputs):
     
     # Basic Info
     metadata.append(('Scenario Name', model_inputs.get('scenario_name', 'Unnamed Scenario')))
+    metadata.append(('Platform Version', PLATFORM_VERSION))
+    metadata.append(('Build Date', BUILD_DATE))
     metadata.append(('Generated At', datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     metadata.append(('Time Mode', model_inputs.get('time_mode', 'monthly')))
     metadata.append(('Periods', model_inputs.get('periods', 0)))
@@ -326,7 +351,18 @@ def _write_scenario_sheet(writer, model_inputs):
 def _write_summary_sheet(writer, income_statement_df, cash_flow_df, dscr_series_or_df):
     """Write summary sheet with key metrics."""
     summary_df = build_summary_df(income_statement_df, cash_flow_df, dscr_series_or_df)
-    summary_df.to_excel(writer, sheet_name='Summary')
+    
+    # Sanitize column names for Excel compatibility
+    summary_df = sanitize_excel_columns(summary_df)
+    
+    # Write summary data starting at row 3 to leave room for header
+    summary_df.to_excel(writer, sheet_name='Summary', index=True, startrow=2)
+    
+    # Add version metadata header
+    worksheet = writer.sheets['Summary']
+    worksheet['A1'] = f'FinanceModeler v{PLATFORM_VERSION}'
+    worksheet['A1'].font = openpyxl.styles.Font(bold=True, size=12)
+    worksheet['B1'] = f'Build: {BUILD_DATE}'
     
     # Auto-adjust column widths
     worksheet = writer.sheets['Summary']
@@ -337,6 +373,9 @@ def _write_summary_sheet(writer, income_statement_df, cash_flow_df, dscr_series_
 
 def _write_income_statement_sheet(writer, income_statement_df):
     """Write income statement sheet using existing DataFrame."""
+    # Sanitize column names for Excel compatibility
+    income_statement_df = sanitize_excel_columns(income_statement_df)
+    
     income_statement_df.to_excel(writer, sheet_name='Income_Statement')
     
     # Auto-adjust column widths
@@ -348,6 +387,9 @@ def _write_income_statement_sheet(writer, income_statement_df):
 
 def _write_cash_flow_sheet(writer, cash_flow_df):
     """Write cash flow sheet using existing DataFrame."""
+    # Sanitize column names for Excel compatibility
+    cash_flow_df = sanitize_excel_columns(cash_flow_df)
+    
     cash_flow_df.to_excel(writer, sheet_name='Cash_Flow')
     
     # Auto-adjust column widths
@@ -364,6 +406,9 @@ def _write_raw_json_sheet(writer, model_inputs):
     # Split JSON into lines for better readability
     lines = json_str.split('\n')
     df = pd.DataFrame({'JSON': lines})
+    
+    # Sanitize column names for Excel compatibility
+    df = sanitize_excel_columns(df)
     
     df.to_excel(writer, sheet_name='Raw_JSON', index=False)
     

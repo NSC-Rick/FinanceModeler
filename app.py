@@ -1,5 +1,6 @@
 import streamlit as st
 from ui import home, revenue_page, payroll_page, opex_page, financing_page, review_page, insights_page, modeler_page
+from config.version import PLATFORM_VERSION, BUILD_DATE
 
 
 st.set_page_config(
@@ -32,6 +33,8 @@ forecast_years = periods // 12 if time_mode == 'monthly' else periods
 
 st.sidebar.markdown("""
 ### Model Info
+- **Platform Version:** {version}
+- **Build Date:** {build_date}
 - **Time Mode:** {mode}
 - **Forecast Length:** {years} Years
 - **Periods:** {periods}
@@ -39,6 +42,8 @@ st.sidebar.markdown("""
 - **Payroll Roles:** {payroll_count}
 - **Opex Items:** {opex_count}
 """.format(
+    version=PLATFORM_VERSION,
+    build_date=BUILD_DATE,
     mode=time_mode.capitalize(),
     years=forecast_years,
     periods=periods,
@@ -49,3 +54,7 @@ st.sidebar.markdown("""
 
 page = pages[selection]
 page.render()
+
+# Sidebar footer with version
+st.sidebar.divider()
+st.sidebar.markdown(f"<div style='text-align: center; color: #888; font-size: 0.85em;'>FinanceModeler v{PLATFORM_VERSION}</div>", unsafe_allow_html=True)
