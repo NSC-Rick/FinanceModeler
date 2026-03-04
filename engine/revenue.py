@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 
-def calculate_revenue(revenue_streams, time_mode, periods, seasonality=None):
+def calculate_revenue(revenue_streams, time_mode, periods, seasonality=None, startup_ramp_months=0):
     """
     Calculate revenue for multiple streams over time.
     
@@ -11,6 +11,7 @@ def calculate_revenue(revenue_streams, time_mode, periods, seasonality=None):
         time_mode: 'monthly' or 'annual'
         periods: Number of periods
         seasonality: Optional dict with keys: enabled, mode, custom_weights
+        startup_ramp_months: Number of months to ramp from 0% to 100% revenue (default: 0 = disabled)
     
     Returns:
         DataFrame with period index and column per revenue stream plus total
@@ -60,6 +61,11 @@ def calculate_revenue(revenue_streams, time_mode, periods, seasonality=None):
                 seasonal_multiplier = seasonal_weights[month_index] / (100 / 12)
                 base_revenue *= seasonal_multiplier
             
+            # Apply startup ramp if enabled (monthly mode only)
+            if startup_ramp_months > 0 and time_mode == 'monthly':
+                ramp_factor = min(1.0, (period + 1) / startup_ramp_months)
+                base_revenue *= ramp_factor
+            
             revenues.append(base_revenue)
         
         revenue_data[name] = revenues
@@ -70,14 +76,16 @@ def calculate_revenue(revenue_streams, time_mode, periods, seasonality=None):
     return df.set_index('period')
 
 
-def calculate_cogs(revenue_df, revenue_streams, global_cogs_pct):
+def calculate_cogs(revenue_df, revenue_streams, global_cogs_pct, time_mode='monthly', cogs_improvement_pct=0.0):
     """
-    Calculate COGS based on revenue.
+    Calculate COGS based on revenue with optional efficiency improvement.
     
     Args:
         revenue_df: DataFrame from calculate_revenue
         revenue_streams: List of revenue stream dicts (with optional cogs_override)
         global_cogs_pct: Default COGS percentage (e.g., 0.30 for 30%)
+        time_mode: 'monthly' or 'annual'
+        cogs_improvement_pct: Annual COGS improvement percentage (e.g., 2.0 for 2% per year)
     
     Returns:
         Series with COGS per period
@@ -87,9 +95,24 @@ def calculate_cogs(revenue_df, revenue_streams, global_cogs_pct):
     for stream in revenue_streams:
         name = stream['name']
         cogs_override = stream.get('cogs_override')
-        cogs_pct = cogs_override if cogs_override is not None else global_cogs_pct
+        base_cogs_pct = cogs_override if cogs_override is not None else global_cogs_pct
         
         if name in revenue_df.columns:
-            cogs += revenue_df[name] * cogs_pct
+            # Apply COGS efficiency improvement over time
+            for period in revenue_df.index:
+                if cogs_improvement_pct > 0:
+                    # Calculate year index
+                    if time_mode == 'monthly':
+                        year_index = period / 12
+                    else:
+                        year_index = period
+                    
+                    # Apply compound improvement: adjusted_cogs = base_cogs * (1 - improvement_rate) ** year_index
+                    improvement_rate = cogs_improvement_pct / 100.0
+                    adjusted_cogs_pct = base_cogs_pct * ((1 - improvement_rate) ** year_index)
+                else:
+                    adjusted_cogs_pct = base_cogs_pct
+                
+                cogs.iloc[period] += revenue_df[name].iloc[period] * adjusted_cogs_pct
     
     return cogs

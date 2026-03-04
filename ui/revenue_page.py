@@ -25,6 +25,41 @@ def render():
     )
     st.session_state.global_cogs_pct = global_cogs_pct
     
+    # COGS Guidance Panel
+    st.info("""
+**COGS Guidance**
+
+COGS (Cost of Goods Sold) represents the direct costs required to produce your product or deliver your service.
+
+Typical ranges vary by industry:
+
+• **Retail / Product Resale:** 50% – 70%  
+• **Restaurants / Food Service:** 28% – 35%  
+• **Manufacturing:** 40% – 60%  
+• **Construction / Trades:** 30% – 50%  
+• **Professional Services:** 5% – 20%  
+• **Software / Digital Products:** 0% – 15%
+
+If you are unsure, a starting estimate of **30%** is often reasonable for early-stage projections.
+
+Adjust this value as you refine your assumptions.
+""")
+    
+    # COGS Efficiency Improvement
+    if 'cogs_improvement_pct' not in st.session_state:
+        st.session_state.cogs_improvement_pct = 0.0
+    
+    cogs_improvement = st.number_input(
+        "COGS Improvement per Year (%)",
+        min_value=0.0,
+        max_value=10.0,
+        step=0.5,
+        value=st.session_state.cogs_improvement_pct,
+        format="%.1f",
+        help="Annual reduction in COGS % as operational efficiency improves (e.g., 2.0 = 2% improvement per year)"
+    )
+    st.session_state.cogs_improvement_pct = cogs_improvement
+    
     st.divider()
     
     # Seasonality Controls
@@ -262,6 +297,35 @@ def render():
         
         st.info(f"📊 **Calculated Monthly Transactions:** {calculated_transactions:,.0f} ({customers_per_day:,.0f} customers/day × {days_open:,.0f} days)")
         st.info(f"💰 **Calculated Monthly Revenue:** ${calculated_revenue:,.2f} ({calculated_transactions:,.0f} transactions × ${avg_sale:,.2f})")
+    
+    st.divider()
+    
+    # Startup Revenue Ramp
+    st.subheader("Startup Revenue Ramp")
+    
+    if 'startup_ramp_months' not in st.session_state:
+        st.session_state.startup_ramp_months = 0
+    
+    startup_ramp = st.number_input(
+        "Startup Ramp (Months)",
+        min_value=0,
+        max_value=24,
+        step=1,
+        value=st.session_state.startup_ramp_months,
+        help="Number of months required to reach steady-state revenue. Set to 0 to disable ramp."
+    )
+    st.session_state.startup_ramp_months = startup_ramp
+    
+    if startup_ramp > 0:
+        st.info(f"""
+**Ramp Behavior:** Revenue will gradually increase from 0% to 100% over {startup_ramp} months.
+
+**Typical startup ramps:**
+• **Retail:** 3–6 months  
+• **Restaurant:** 6–12 months  
+• **Service Business:** 3–6 months  
+• **Manufacturing:** 12–24 months
+""")
     
     st.divider()
     

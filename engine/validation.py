@@ -204,6 +204,8 @@ def session_state_to_model_inputs(session_state) -> Dict[str, Any]:
         'periods': session_state.get('periods', 36),  # Default: 3 years × 12 months
         'revenue_streams': session_state.get('revenue_streams', []),
         'global_cogs_pct': session_state.get('global_cogs_pct', 0.30),
+        'cogs_improvement_pct': session_state.get('cogs_improvement_pct', 0.0),
+        'startup_ramp_months': session_state.get('startup_ramp_months', 0),
         'payroll_roles': session_state.get('payroll_roles', []),
         'opex_items': session_state.get('opex_items', []),
         'loan_principal': session_state.get('loan_principal', 0.0),
@@ -271,6 +273,8 @@ def model_inputs_to_session_state(model_inputs: Dict[str, Any], session_state):
     session_state.periods = model_inputs['periods']
     session_state.revenue_streams = model_inputs['revenue_streams']
     session_state.global_cogs_pct = model_inputs['global_cogs_pct']
+    session_state.cogs_improvement_pct = model_inputs.get('cogs_improvement_pct', 0.0)
+    session_state.startup_ramp_months = model_inputs.get('startup_ramp_months', 0)
     session_state.payroll_roles = model_inputs['payroll_roles']
     session_state.opex_items = model_inputs['opex_items']
     session_state.loan_principal = model_inputs['loan_principal']

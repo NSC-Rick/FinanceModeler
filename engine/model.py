@@ -48,13 +48,16 @@ def build_model(model_inputs):
         model_inputs['revenue_streams'],
         time_mode,
         periods,
-        model_inputs.get('seasonality')
+        model_inputs.get('seasonality'),
+        model_inputs.get('startup_ramp_months', 0)
     )
     
     cogs = calculate_cogs(
         revenue_df,
         model_inputs['revenue_streams'],
-        model_inputs['global_cogs_pct']
+        model_inputs['global_cogs_pct'],
+        time_mode,
+        model_inputs.get('cogs_improvement_pct', 0.0)
     )
     
     owner_comp_config = model_inputs.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0})

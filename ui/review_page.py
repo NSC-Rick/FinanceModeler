@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from engine.model import build_model
+from engine.validation import validate_scenario_json
+from utils.formatters import safe_currency, safe_ratio, safe_percentage
 from ui.report_view import render_report
 
 
@@ -305,17 +307,18 @@ def render():
             kpis = outputs['kpis'].copy()
             kpis.index.name = 'Period'
             
+            # Use safe formatters to handle None/NaN values
             format_dict = {
-                'ebitda': "${:,.2f}",
-                'debt_service': "${:,.2f}",
-                'dscr': "{:.2f}",
-                'ending_cash': "${:,.2f}"
+                'ebitda': lambda x: safe_currency(x),
+                'debt_service': lambda x: safe_currency(x),
+                'dscr': lambda x: safe_ratio(x),
+                'ending_cash': lambda x: safe_currency(x)
             }
             
             if 'net_income' in kpis.columns:
-                format_dict['net_income'] = "${:,.2f}"
-                format_dict['taxes'] = "${:,.2f}"
-                format_dict['net_margin'] = "{:.2%}"
+                format_dict['net_income'] = lambda x: safe_currency(x)
+                format_dict['taxes'] = lambda x: safe_currency(x)
+                format_dict['net_margin'] = lambda x: safe_percentage(x)
             
             st.dataframe(
                 kpis.style.format(format_dict),
@@ -367,7 +370,7 @@ def render():
                     
                     st.metric(
                         label="💰 Break-Even Revenue (Annual)",
-                        value=f"${break_even:,.0f}" if not pd.isna(break_even) else "N/A",
+                        value=safe_currency(break_even, decimals=0, placeholder="N/A"),
                         help="Annual revenue needed to cover all fixed costs, owner salary, and debt service"
                     )
                     
@@ -409,7 +412,7 @@ def render():
                 final_cash = kpis['ending_cash'].iloc[-1]
                 st.metric(
                     label="Final Ending Cash",
-                    value=f"${final_cash:,.2f}"
+                    value=safe_currency(final_cash)
                 )
             
             with col2:
@@ -417,7 +420,7 @@ def render():
                     final_net_income = kpis['net_income'].iloc[-1]
                     st.metric(
                         label="Final Net Income",
-                        value=f"${final_net_income:,.2f}"
+                        value=safe_currency(final_net_income)
                     )
             
             with col3:
@@ -425,15 +428,15 @@ def render():
                     avg_gross_margin = kpis['gross_margin'].mean()
                     st.metric(
                         label="Avg Gross Margin %",
-                        value=f"{avg_gross_margin:.1%}"
+                        value=safe_percentage(avg_gross_margin, decimals=1)
                     )
             
             with col4:
                 if 'taxes' in kpis.columns:
                     total_taxes = kpis['taxes'].sum()
                     st.metric(
-                        label="Total Taxes (5Y)",
-                        value=f"${total_taxes:,.2f}"
+                        label="Total Taxes (3Y)",
+                        value=safe_currency(total_taxes)
                     )
             
             st.download_button(
@@ -447,6 +450,8 @@ def render():
             st.subheader("Visualizations")
             
             fig_revenue = go.Figure()
+            
+            # Add actual revenue line
             fig_revenue.add_trace(go.Scatter(
                 x=list(range(st.session_state.periods)),
                 y=outputs['income_statement']['revenue'].values,
@@ -454,6 +459,40 @@ def render():
                 name='Revenue',
                 line=dict(color='#1f77b4', width=2)
             ))
+            
+            # If startup ramp is enabled, show full steady-state revenue
+            startup_ramp = st.session_state.get('startup_ramp_months', 0)
+            if startup_ramp > 0 and st.session_state.time_mode == 'monthly':
+                # Calculate full revenue without ramp
+                full_revenue = []
+                for period in range(st.session_state.periods):
+                    if startup_ramp > 0 and period < startup_ramp:
+                        ramp_factor = (period + 1) / startup_ramp
+                        full_rev = outputs['income_statement']['revenue'].values[period] / ramp_factor if ramp_factor > 0 else 0
+                    else:
+                        full_rev = outputs['income_statement']['revenue'].values[period]
+                    full_revenue.append(full_rev)
+                
+                fig_revenue.add_trace(go.Scatter(
+                    x=list(range(st.session_state.periods)),
+                    y=full_revenue,
+                    mode='lines',
+                    name='Full Revenue (Steady-State)',
+                    line=dict(color='#1f77b4', width=1, dash='dash'),
+                    opacity=0.5
+                ))
+                
+                # Add shaded ramp period
+                fig_revenue.add_vrect(
+                    x0=0,
+                    x1=startup_ramp,
+                    fillcolor="lightgray",
+                    opacity=0.2,
+                    line_width=0,
+                    annotation_text=f"Ramp Period ({startup_ramp} months)",
+                    annotation_position="top left"
+                )
+            
             fig_revenue.update_layout(
                 title="Revenue Trend",
                 xaxis_title="Period",
