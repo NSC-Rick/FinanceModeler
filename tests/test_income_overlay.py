@@ -139,7 +139,7 @@ def test_income_statement_unchanged_by_overlay():
 def test_overlay_periods_match_income_statement():
     """Verify overlay has same number of periods as income statement."""
     model_inputs = get_default_model_inputs()
-    model_inputs['periods'] = 60
+    model_inputs['periods'] = 36
     
     outputs = build_model(model_inputs)
     
@@ -147,15 +147,15 @@ def test_overlay_periods_match_income_statement():
     loan_schedule = outputs['loan_schedule']
     
     # All should have same length
-    assert len(income_statement) == 60
-    assert len(loan_schedule) == 60
+    assert len(income_statement) == 36
+    assert len(loan_schedule) == 36
 
 
 def test_annual_mode_owner_comp():
     """Verify owner comp calculation in annual mode."""
     model_inputs = get_default_model_inputs()
     model_inputs['time_mode'] = 'annual'
-    model_inputs['periods'] = 5
+    model_inputs['periods'] = 3
     model_inputs['owner_compensation'] = {
         'mode': 'distribution',
         'amount': 60000.0  # Annual
@@ -180,7 +180,7 @@ def test_monthly_mode_owner_comp():
     """Verify owner comp calculation in monthly mode."""
     model_inputs = get_default_model_inputs()
     model_inputs['time_mode'] = 'monthly'
-    model_inputs['periods'] = 60
+    model_inputs['periods'] = 36
     model_inputs['owner_compensation'] = {
         'mode': 'distribution',
         'amount': 60000.0  # Annual

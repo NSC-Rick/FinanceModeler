@@ -17,7 +17,7 @@ from engine.underwriting import (
 
 def get_underwriting_inputs(time_mode='monthly', owner_mode='distribution', owner_amount=60000.0):
     """Get model inputs with underwriting features."""
-    periods = 60 if time_mode == 'monthly' else 5
+    periods = 36 if time_mode == 'monthly' else 3
     
     return {
         'time_mode': time_mode,
@@ -146,8 +146,8 @@ def test_owner_distribution_affects_cash_only():
     
     assert 'owner_distribution' in outputs_owner_dist['cash_flow_statement'].columns
     total_owner_dist = outputs_owner_dist['cash_flow_statement']['owner_distribution'].sum()
-    # 60 months = 5 years, so total = 5 × annual amount
-    assert np.isclose(total_owner_dist, 60000.0 * 5, rtol=1e-5)
+    # 36 months = 3 years, so total = 3 × annual amount
+    assert np.isclose(total_owner_dist, 60000.0 * 3, rtol=1e-5)
 
 
 def test_break_even_includes_debt_and_owner():
@@ -249,22 +249,25 @@ def test_owner_distribution_monthly_calculation():
     """Test that owner distribution is calculated correctly for monthly mode."""
     owner_comp = {'mode': 'distribution', 'amount': 60000.0}
     
-    owner_dist = calculate_owner_distribution(owner_comp, 'monthly', 60)
+    owner_dist = calculate_owner_distribution(owner_comp, 'monthly', 36)
     
-    assert len(owner_dist) == 60
+    assert len(owner_dist) == 36
     # Annual amount / 12 = monthly amount
     assert np.allclose(owner_dist, 5000.0, rtol=1e-5)
-    # 60 months = 5 years, so total = 5 × annual amount
-    assert np.isclose(owner_dist.sum(), 60000.0 * 5, rtol=1e-5)
+    # Total distribution over 3 years should equal 3 × annual amount
+    total_distribution = owner_dist.sum()
+    expected_total = 60000.0 * 3  # 3 years
+    
+    assert np.isclose(total_distribution, expected_total, rtol=1e-5)
 
 
 def test_owner_distribution_annual_calculation():
     """Test that owner distribution is calculated correctly for annual mode."""
     owner_comp = {'mode': 'distribution', 'amount': 60000.0}
     
-    owner_dist = calculate_owner_distribution(owner_comp, 'annual', 5)
+    owner_dist = calculate_owner_distribution(owner_comp, 'annual', 3)
     
-    assert len(owner_dist) == 5
+    assert len(owner_dist) == 3
     assert np.allclose(owner_dist, 60000.0, rtol=1e-5)
 
 
@@ -306,11 +309,13 @@ def test_break_even_zero_contribution_margin():
 
 
 def test_annual_mode_underwriting():
-    """Test that underwriting metrics work in annual mode."""
-    inputs = get_underwriting_inputs('annual', 'distribution', 60000.0)
+    """Test underwriting metrics work in annual mode."""
+    inputs = get_underwriting_inputs('annual')
     outputs = build_model(inputs)
     
-    assert len(outputs['pnl_statement']) == 5
+    pnl = outputs['pnl_statement']
+    
+    assert len(pnl) == 3
     assert 'dscr' in outputs['kpis'].columns
     assert 'break_even_revenue' in outputs['kpis'].columns
 

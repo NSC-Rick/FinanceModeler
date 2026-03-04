@@ -14,7 +14,7 @@ def initialize_session_state():
         st.session_state.time_mode = 'monthly'
     
     if 'periods' not in st.session_state:
-        st.session_state.periods = 60
+        st.session_state.periods = 36  # Default: 3 years × 12 months
     
     if 'revenue_streams' not in st.session_state:
         st.session_state.revenue_streams = [
@@ -326,22 +326,22 @@ def render():
     
     with col1:
         time_mode = st.radio(
-            "Select Time Mode",
+            "Time Mode",
             options=['monthly', 'annual'],
             index=0 if st.session_state.time_mode == 'monthly' else 1,
-            help="Monthly = 60 periods (5 years), Annual = 5 periods (5 years)"
+            help="Monthly = 36 periods (3 years), Annual = 3 periods (3 years)"
         )
         
         if time_mode != st.session_state.time_mode:
             st.session_state.time_mode = time_mode
-            st.session_state.periods = 60 if time_mode == 'monthly' else 5
+            st.session_state.periods = 36 if time_mode == 'monthly' else 3
             st.rerun()
     
     with col2:
         st.metric(
-            label="Total Periods",
-            value=st.session_state.periods,
-            help=f"{'5 years × 12 months' if st.session_state.time_mode == 'monthly' else '5 years'}"
+            label="Forecast Length",
+            value=f"3 Years ({st.session_state.periods} periods)",
+            help=f"{'3 years × 12 months' if st.session_state.time_mode == 'monthly' else '3 years'}"
         )
     
     st.divider()

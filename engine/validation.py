@@ -11,7 +11,7 @@ def get_default_model_inputs():
     """
     return {
         'time_mode': 'monthly',
-        'periods': 60,
+        'periods': 36,  # Default: 3 years × 12 months
         'revenue_streams': [
             {
                 'name': 'Product Sales',
@@ -201,7 +201,7 @@ def session_state_to_model_inputs(session_state) -> Dict[str, Any]:
     """
     return {
         'time_mode': session_state.get('time_mode', 'monthly'),
-        'periods': session_state.get('periods', 60),
+        'periods': session_state.get('periods', 36),  # Default: 3 years × 12 months
         'revenue_streams': session_state.get('revenue_streams', []),
         'global_cogs_pct': session_state.get('global_cogs_pct', 0.30),
         'payroll_roles': session_state.get('payroll_roles', []),

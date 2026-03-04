@@ -11,10 +11,10 @@ def test_loan_amortization_monthly():
     """Test monthly loan amortization calculation."""
     principal = 100000
     annual_rate = 0.06
-    term_months = 60
+    term_months = 36  # Match forecast period
     start_period = 0
     time_mode = 'monthly'
-    periods = 60
+    periods = 36
     
     schedule = calculate_loan_schedule(
         principal, annual_rate, term_months, start_period, time_mode, periods
@@ -35,10 +35,10 @@ def test_loan_amortization_annual():
     """Test annual loan amortization calculation."""
     principal = 100000
     annual_rate = 0.06
-    term_months = 60
+    term_months = 36  # 3 years
     start_period = 0
     time_mode = 'annual'
-    periods = 5
+    periods = 3
     
     schedule = calculate_loan_schedule(
         principal, annual_rate, term_months, start_period, time_mode, periods
@@ -56,7 +56,7 @@ def test_loan_delayed_start():
     term_months = 36
     start_period = 12
     time_mode = 'monthly'
-    periods = 60
+    periods = 36
     
     schedule = calculate_loan_schedule(
         principal, annual_rate, term_months, start_period, time_mode, periods
@@ -72,9 +72,9 @@ def test_loan_delayed_start():
 
 def test_loan_zero_principal():
     """Test loan with zero principal."""
-    schedule = calculate_loan_schedule(0, 0.06, 60, 0, 'monthly', 60)
+    schedule = calculate_loan_schedule(0, 0.06, 36, 0, 'monthly', 36)
     
-    assert len(schedule) == 60
+    assert len(schedule) == 36
     assert schedule['payment'].sum() == 0
     assert schedule['interest'].sum() == 0
 
@@ -83,10 +83,10 @@ def test_loan_payment_consistency():
     """Test that loan payments are consistent (except last payment)."""
     principal = 100000
     annual_rate = 0.06
-    term_months = 60
+    term_months = 36  # Match forecast period
     start_period = 0
     time_mode = 'monthly'
-    periods = 60
+    periods = 36
     
     schedule = calculate_loan_schedule(
         principal, annual_rate, term_months, start_period, time_mode, periods

@@ -263,7 +263,7 @@ def test_capital_stack_in_saved_scenario():
     class MockSessionState:
         def __init__(self):
             self.time_mode = 'monthly'
-            self.periods = 60
+            self.periods = 36
             self.revenue_streams = []
             self.global_cogs_pct = 0.30
             self.payroll_roles = []

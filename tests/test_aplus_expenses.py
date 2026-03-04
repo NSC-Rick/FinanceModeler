@@ -12,7 +12,7 @@ from engine.opex import calculate_opex
 
 def get_aplus_inputs(time_mode='monthly'):
     """Get model inputs with A+ expense architecture."""
-    periods = 60 if time_mode == 'monthly' else 5
+    periods = 36 if time_mode == 'monthly' else 3
     
     return {
         'time_mode': time_mode,
@@ -329,7 +329,7 @@ def test_annual_mode_aplus():
     inputs = get_aplus_inputs('annual')
     outputs = build_model(inputs)
     
-    assert len(outputs['pnl_statement']) == 5
+    assert len(outputs['pnl_statement']) == 3
     assert (outputs['pnl_statement']['cogs_direct_labor'] > 0).any()
     assert (outputs['pnl_statement']['indirect_payroll'] > 0).any()
 

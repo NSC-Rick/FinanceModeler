@@ -9,7 +9,7 @@ from engine.model import build_model
 
 def get_default_inputs(time_mode='monthly'):
     """Get default model inputs for testing."""
-    periods = 60 if time_mode == 'monthly' else 5
+    periods = 36 if time_mode == 'monthly' else 3
     
     return {
         'time_mode': time_mode,
@@ -54,45 +54,46 @@ def get_default_inputs(time_mode='monthly'):
 
 
 def test_model_builds_monthly():
-    """Test that model builds successfully with monthly time mode."""
+    """Test that model builds successfully in monthly mode."""
     inputs = get_default_inputs('monthly')
     outputs = build_model(inputs)
     
-    assert 'revenue_df' in outputs
+    assert len(outputs['pnl_statement']) == 36  
     assert 'income_statement' in outputs
     assert 'cash_flow_statement' in outputs
     assert 'kpis' in outputs
     
-    assert len(outputs['income_statement']) == 60
-    assert len(outputs['cash_flow_statement']) == 60
-    assert len(outputs['kpis']) == 60
+    assert len(outputs['income_statement']) == 36
+    assert len(outputs['cash_flow_statement']) == 36
+    assert len(outputs['kpis']) == 36
 
 
 def test_model_builds_annual():
-    """Test that model builds successfully with annual time mode."""
+    """Test that model builds successfully in annual mode."""
     inputs = get_default_inputs('annual')
     outputs = build_model(inputs)
     
-    assert 'revenue_df' in outputs
+    assert len(outputs['pnl_statement']) == 3  
     assert 'income_statement' in outputs
     assert 'cash_flow_statement' in outputs
     assert 'kpis' in outputs
     
-    assert len(outputs['income_statement']) == 5
-    assert len(outputs['cash_flow_statement']) == 5
-    assert len(outputs['kpis']) == 5
+    assert len(outputs['income_statement']) == 3
+    assert len(outputs['cash_flow_statement']) == 3
+    assert len(outputs['kpis']) == 3
 
 
 def test_revenue_output_shape():
-    """Test revenue output has correct shape."""
+    """Test that revenue output has correct shape."""
     inputs = get_default_inputs('monthly')
     outputs = build_model(inputs)
     
     revenue_df = outputs['revenue_df']
     
+    assert len(outputs['pnl_statement']) == 36   
     assert 'total' in revenue_df.columns
     assert 'Product Sales' in revenue_df.columns
-    assert len(revenue_df) == 60
+    assert len(revenue_df) == 36
 
 
 def test_multiple_revenue_streams():
@@ -160,24 +161,24 @@ def test_kpis_structure():
 
 
 def test_no_revenue_streams():
-    """Test model handles empty revenue streams."""
+    """Test model with no revenue streams."""
     inputs = get_default_inputs('monthly')
     inputs['revenue_streams'] = []
     
     outputs = build_model(inputs)
     
-    assert len(outputs['revenue_df']) == 60
+    assert len(outputs['pnl_statement']) == 36
     assert outputs['revenue_df']['total'].sum() == 0
 
 
 def test_no_payroll_roles():
-    """Test model handles empty payroll roles."""
+    """Test model with no payroll roles."""
     inputs = get_default_inputs('monthly')
     inputs['payroll_roles'] = []
     
     outputs = build_model(inputs)
     
-    assert len(outputs['payroll_df']) == 60
+    assert len(outputs['pnl_statement']) == 36
     assert outputs['payroll_df']['total'].sum() == 0
 
 

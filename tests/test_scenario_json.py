@@ -16,7 +16,7 @@ class MockSessionState:
     """Mock Streamlit session state for testing."""
     def __init__(self):
         self.time_mode = 'monthly'
-        self.periods = 60
+        self.periods = 36
         self.revenue_streams = []
         self.global_cogs_pct = 0.30
         self.payroll_roles = []
@@ -206,7 +206,7 @@ def test_roundtrip_with_session_state():
     """Test complete roundtrip: session state -> model inputs -> JSON -> model inputs -> session state."""
     session1 = MockSessionState()
     session1.time_mode = 'monthly'
-    session1.periods = 60
+    session1.periods = 36
     session1.revenue_streams = [
         {
             'name': 'Product A',
@@ -264,7 +264,7 @@ def test_get_default_model_inputs_structure():
     assert 'annual_depreciation' in defaults
     
     assert defaults['time_mode'] == 'monthly'
-    assert defaults['periods'] == 60
+    assert defaults['periods'] == 36
     assert isinstance(defaults['revenue_streams'], list)
     assert isinstance(defaults['payroll_roles'], list)
     assert isinstance(defaults['opex_items'], list)

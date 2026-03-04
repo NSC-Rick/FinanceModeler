@@ -10,7 +10,7 @@ from engine.model import build_model
 
 def get_profitable_inputs(time_mode='monthly'):
     """Get model inputs that result in positive income."""
-    periods = 60 if time_mode == 'monthly' else 5
+    periods = 36 if time_mode == 'monthly' else 3
     
     return {
         'time_mode': time_mode,
@@ -58,7 +58,7 @@ def get_profitable_inputs(time_mode='monthly'):
 
 def get_unprofitable_inputs(time_mode='monthly'):
     """Get model inputs that result in negative income."""
-    periods = 60 if time_mode == 'monthly' else 5
+    periods = 36 if time_mode == 'monthly' else 3
     
     return {
         'time_mode': time_mode,
@@ -112,7 +112,7 @@ def test_pnl_positive_tax_monthly():
     pnl = outputs['pnl_statement']
     
     assert 'pnl_statement' in outputs
-    assert len(pnl) == 60
+    assert len(pnl) == 36
     assert 'depreciation' in pnl.columns
     assert 'taxes' in pnl.columns
     assert 'pre_tax_income' in pnl.columns
@@ -133,7 +133,7 @@ def test_pnl_positive_tax_annual():
     
     pnl = outputs['pnl_statement']
     
-    assert len(pnl) == 5
+    assert len(pnl) == 3
     assert (pnl['depreciation'] >= 0).all()
     assert (pnl['taxes'] >= 0).all()
 
@@ -145,7 +145,7 @@ def test_pnl_negative_no_tax_monthly():
     
     pnl = outputs['pnl_statement']
     
-    assert len(pnl) == 60
+    assert len(pnl) == 36
     
     negative_income_periods = pnl[pnl['pre_tax_income'] < 0]
     if len(negative_income_periods) > 0:
@@ -159,7 +159,7 @@ def test_pnl_negative_no_tax_annual():
     
     pnl = outputs['pnl_statement']
     
-    assert len(pnl) == 5
+    assert len(pnl) == 3
     
     negative_income_periods = pnl[pnl['pre_tax_income'] < 0]
     if len(negative_income_periods) > 0:

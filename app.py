@@ -26,16 +26,22 @@ selection = st.sidebar.radio("Go to", list(pages.keys()))
 
 st.sidebar.divider()
 
+periods = st.session_state.get('periods', 36)
+time_mode = st.session_state.get('time_mode', 'monthly')
+forecast_years = periods // 12 if time_mode == 'monthly' else periods
+
 st.sidebar.markdown("""
 ### Model Info
 - **Time Mode:** {mode}
+- **Forecast Length:** {years} Years
 - **Periods:** {periods}
 - **Revenue Streams:** {rev_count}
 - **Payroll Roles:** {payroll_count}
 - **Opex Items:** {opex_count}
 """.format(
-    mode=st.session_state.get('time_mode', 'monthly').capitalize(),
-    periods=st.session_state.get('periods', 60),
+    mode=time_mode.capitalize(),
+    years=forecast_years,
+    periods=periods,
     rev_count=len(st.session_state.get('revenue_streams', [])),
     payroll_count=len(st.session_state.get('payroll_roles', [])),
     opex_count=len(st.session_state.get('opex_items', []))
