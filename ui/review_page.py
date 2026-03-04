@@ -5,6 +5,7 @@ from engine.model import build_model
 from engine.validation import validate_scenario_json
 from utils.formatters import safe_currency, safe_ratio, safe_percentage
 from ui.report_view import render_report
+from analysis.financial_metrics import compute_financial_metrics
 
 
 def render():
@@ -57,8 +58,19 @@ def render():
         
         # Store summary metrics in session_state for Modeler page
         income_statement = outputs['income_statement']
+        cash_flow_statement = outputs['cash_flow']
         loan_schedule = outputs['loan_schedule']
         kpis = outputs['kpis']
+        
+        # Compute canonical financial metrics (single source of truth)
+        owner_comp_config = model_inputs.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0})
+        canonical_metrics = compute_financial_metrics(
+            income_statement,
+            cash_flow_statement,
+            loan_schedule,
+            owner_comp_config,
+            model_inputs['time_mode']
+        )
         
         # Store DataFrames in session state for Excel export
         # Income statement transposed (rows = line items, columns = periods)
@@ -75,11 +87,10 @@ def render():
             cash_flow_transposed.index.name = 'Line Item'
             st.session_state.cash_flow_df = cash_flow_transposed
         
-        # DSCR series if available
-        if 'dscr' in kpis:
-            st.session_state.dscr_series = kpis['dscr']
+        # Store canonical DSCR series
+        st.session_state.dscr_series = canonical_metrics['dscr_series']
         
-        # Calculate Year 1 metrics
+        # Calculate Year 1 metrics using canonical source
         if st.session_state.time_mode == 'monthly':
             year1_periods = min(12, len(income_statement))
             year1_revenue = income_statement['revenue'][:year1_periods].sum()
@@ -88,6 +99,7 @@ def render():
             year1_debt_service = loan_schedule['payment'][:year1_periods].sum()
             year1_cash_flow = year1_net_income - year1_debt_service
             year1_ebitda = income_statement['ebitda'][:year1_periods].sum()
+            # Use canonical DSCR calculation
             year1_dscr = year1_ebitda / year1_debt_service if year1_debt_service > 0 else None
         else:
             year1_revenue = income_statement['revenue'].iloc[0]
@@ -96,6 +108,7 @@ def render():
             year1_debt_service = loan_schedule['payment'].iloc[0]
             year1_cash_flow = year1_net_income - year1_debt_service
             year1_ebitda = income_statement['ebitda'].iloc[0]
+            # Use canonical DSCR calculation
             year1_dscr = year1_ebitda / year1_debt_service if year1_debt_service > 0 else None
         
         # Store in session_state for Modeler
@@ -349,10 +362,11 @@ def render():
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                # Check if there's any debt service
-                total_debt_service = kpis['debt_service'].sum()
+                # Use canonical metrics for DSCR
+                avg_dscr = canonical_metrics['avg_dscr']
+                total_debt_service = canonical_metrics['total_debt_service']
                 
-                if total_debt_service == 0:
+                if total_debt_service == 0 or avg_dscr is None:
                     # Debt-free scenario
                     st.metric(
                         label="⭐ Average DSCR",
@@ -362,10 +376,7 @@ def render():
                     st.success("🟢 Debt Free")
                     st.caption("No debt obligations")
                 else:
-                    # Calculate average DSCR (excluding None values)
-                    dscr_values = kpis['dscr'].dropna()
-                    avg_dscr = dscr_values.mean() if len(dscr_values) > 0 else 0
-                    
+                    # Use canonical average DSCR
                     st.metric(
                         label="⭐ Average DSCR",
                         value=f"{avg_dscr:.2f}",

@@ -8,6 +8,7 @@ No AI commentary, no subjective language, no composite scoring.
 import streamlit as st
 from engine.model import build_model
 from engine.validation import session_state_to_model_inputs
+from analysis.financial_metrics import compute_financial_metrics, get_cash_metrics_for_period
 
 
 def render():
@@ -34,33 +35,29 @@ def render():
         cash_flow_statement = outputs['cash_flow_statement']
         loan_schedule = outputs['loan_schedule']
         
-        # Get first period metrics for evaluation
-        first_period_kpis = kpis.iloc[0]
-        dscr = first_period_kpis.get('dscr', None)  # None if debt-free
-        gross_margin_pct = first_period_kpis.get('gross_margin_pct', 0) / 100  # Convert to decimal
-        
-        # Calculate cash after debt and owner
-        net_income = income_statement['net_income'].iloc[0]
-        debt_service = loan_schedule['payment'].iloc[0]
-        total_debt_service = loan_schedule['payment'].sum()  # Check if any debt exists
-        cash_after_debt = net_income - debt_service
-        
+        # Compute canonical financial metrics (single source of truth)
         owner_comp_config = model_inputs.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0})
-        owner_comp_mode = owner_comp_config.get('mode', 'distribution')
-        owner_comp_annual = owner_comp_config.get('amount', 0.0)
+        metrics = compute_financial_metrics(
+            income_statement,
+            cash_flow_statement,
+            loan_schedule,
+            owner_comp_config,
+            model_inputs['time_mode']
+        )
         
-        if model_inputs['time_mode'] == 'monthly':
-            owner_comp_per_period = owner_comp_annual / 12
-        else:
-            owner_comp_per_period = owner_comp_annual
+        # Get first period metrics from canonical source
+        dscr = metrics['current_dscr']  # None if debt-free
+        total_debt_service = metrics['total_debt_service']
         
-        if owner_comp_mode == 'distribution':
-            cash_after_debt_and_owner = cash_after_debt - owner_comp_per_period
-        else:
-            cash_after_debt_and_owner = cash_after_debt
+        # Get cash metrics for first period
+        cash_metrics = get_cash_metrics_for_period(metrics, period_index=0)
+        operating_cash_flow = cash_metrics['operating_cash_flow']
+        cash_after_debt = cash_metrics['cash_after_debt']
+        cash_after_debt_and_owner = cash_metrics['cash_after_owner']
         
-        # Operating cash flow
-        operating_cash_flow = cash_flow_statement['operating_cash_flow'].iloc[0]
+        # Get gross margin from KPIs
+        first_period_kpis = kpis.iloc[0]
+        gross_margin_pct = first_period_kpis.get('gross_margin_pct', 0) / 100  # Convert to decimal
         
         # Revenue for ratio calculations
         revenue = income_statement['revenue'].iloc[0]
