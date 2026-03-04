@@ -345,17 +345,29 @@ def render():
             """)
         
             if st.button("🔄 Apply Capital Stack Debt to Operating Model", type="primary"):
-                # Apply bank loan
-                st.session_state.loan_principal = bank_amount
-                st.session_state.loan_annual_rate = bank_rate
-                st.session_state.loan_term_months = bank_term * 12
-            
-                # Note: Seller note would need additional debt module support
-                # For now, we'll show a message
+                # Map capital stack bank loan to Advanced mode business loan keys
+                st.session_state.business_loan_amount = bank_amount
+                st.session_state.business_interest_rate = bank_rate
+                st.session_state.business_amort_years = bank_term
+                
+                # Map seller note to Advanced mode real estate loan keys if present
                 if seller_amount > 0:
-                    st.warning(f"⚠️ Seller Note (${seller_amount:,.2f}) noted but current model supports single loan only. Consider combining with bank loan or tracking separately.")
-            
-                st.success(f"✅ Applied Bank Loan: ${bank_amount:,.2f} at {bank_rate:.1%} for {bank_term} years to Operating Model")
+                    st.session_state.real_estate_loan_amount = seller_amount
+                    st.session_state.real_estate_interest_rate = seller_rate
+                    st.session_state.real_estate_amort_years = seller_term
+                    st.success(f"✅ Applied Bank Loan (${bank_amount:,.2f} at {bank_rate:.1%}) to Business Loan and Seller Note (${seller_amount:,.2f} at {seller_rate:.1%}) to Real Estate Loan")
+                else:
+                    # Clear real estate loan if no seller note
+                    st.session_state.real_estate_loan_amount = 0.0
+                    st.session_state.real_estate_interest_rate = 0.0
+                    st.session_state.real_estate_amort_years = 10
+                    st.success(f"✅ Applied Bank Loan: ${bank_amount:,.2f} at {bank_rate:.1%} for {bank_term} years to Business Loan")
+                
+                # Also update legacy keys for compatibility
+                st.session_state.loan_principal = bank_amount + seller_amount
+                st.session_state.loan_annual_rate = bank_rate if bank_amount > 0 else 0.0
+                st.session_state.loan_term_months = bank_term * 12
+                
                 st.rerun()
     
     st.divider()
