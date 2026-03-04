@@ -360,6 +360,12 @@ def render():
     
     st.divider()
     
+    # Initialize loan variables from session state before mode branching
+    # This ensures they are always defined before use
+    loan_principal = float(st.session_state.get("loan_principal", 0.0))
+    loan_annual_rate = float(st.session_state.get("loan_annual_rate", 0.0))
+    loan_term_months = int(st.session_state.get("loan_term_months", 60))
+    
     # Mode-aware loan structure
     if st.session_state.mode == "Advanced":
         # Dual Loan Structure (Advanced Mode)
@@ -489,7 +495,9 @@ def render():
             st.metric("**Total Monthly Debt Service**", f"${total_monthly_payment:,.2f}")
         
         # Update legacy loan_principal for compatibility with existing model
-        st.session_state.loan_principal = total_loan_amount
+        loan_principal = total_loan_amount
+        st.session_state.loan_principal = loan_principal
+        
         if total_loan_amount > 0:
             # Weighted average interest rate
             if business_loan_amount > 0 and real_estate_loan_amount > 0:
@@ -498,7 +506,8 @@ def render():
                 weighted_rate = business_interest_rate
             else:
                 weighted_rate = real_estate_interest_rate
-            st.session_state.loan_annual_rate = weighted_rate
+            loan_annual_rate = weighted_rate
+            st.session_state.loan_annual_rate = loan_annual_rate
             
             # Weighted average term
             if business_loan_amount > 0 and real_estate_loan_amount > 0:
@@ -507,7 +516,14 @@ def render():
                 weighted_term = business_amort_years
             else:
                 weighted_term = real_estate_amort_years
-            st.session_state.loan_term_months = int(weighted_term * 12)
+            loan_term_months = int(weighted_term * 12)
+            st.session_state.loan_term_months = loan_term_months
+        else:
+            # No loans in Advanced mode - keep initialized values
+            loan_annual_rate = 0.0
+            loan_term_months = 60
+            st.session_state.loan_annual_rate = loan_annual_rate
+            st.session_state.loan_term_months = loan_term_months
     
     else:
         # Single Loan Structure (Basic Mode)
