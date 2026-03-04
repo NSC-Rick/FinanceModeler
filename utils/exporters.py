@@ -7,6 +7,13 @@ from io import BytesIO
 from datetime import datetime
 from typing import Optional, Union
 
+# Check for openpyxl availability
+try:
+    import openpyxl
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+
 
 def export_scenario_to_excel(
     model_inputs: dict,
@@ -18,6 +25,9 @@ def export_scenario_to_excel(
     """
     Export scenario to Excel format with multiple sheets.
     
+    Raises:
+        ImportError: If openpyxl is not installed
+    
     Args:
         model_inputs: Dictionary of model inputs from session_state_to_model_inputs
         income_statement_df: Income statement DataFrame (reused from UI display)
@@ -28,6 +38,13 @@ def export_scenario_to_excel(
     Returns:
         bytes: Excel file as bytes for download
     """
+    # Check if openpyxl is available
+    if not OPENPYXL_AVAILABLE:
+        raise ImportError(
+            "openpyxl is required for Excel export. "
+            "Install it with: pip install openpyxl"
+        )
+    
     buffer = BytesIO()
     
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:

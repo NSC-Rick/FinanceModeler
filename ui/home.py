@@ -7,7 +7,15 @@ from engine.validation import (
     session_state_to_model_inputs,
     model_inputs_to_session_state
 )
-from utils.exporters import export_scenario_to_excel
+
+# Check if openpyxl is available for Excel export
+try:
+    import openpyxl
+    from utils.exporters import export_scenario_to_excel
+    EXCEL_AVAILABLE = True
+except ImportError:
+    EXCEL_AVAILABLE = False
+    export_scenario_to_excel = None
 
 
 def initialize_session_state():
@@ -282,12 +290,24 @@ def render():
             key="scenario_name_input"
         )
         
+        # Determine available export formats
+        if EXCEL_AVAILABLE:
+            export_formats = ["Excel (.xlsx)", "JSON"]
+            format_help = "Choose export format: Excel for spreadsheet analysis, JSON for data portability"
+        else:
+            export_formats = ["JSON"]
+            format_help = "Excel export unavailable (openpyxl not installed). JSON export available."
+        
         export_format = st.radio(
             "Export Format",
-            ["Excel (.xlsx)", "JSON"],
+            export_formats,
             horizontal=True,
-            help="Choose export format: Excel for spreadsheet analysis, JSON for data portability"
+            help=format_help
         )
+        
+        # Show warning if Excel not available and user might expect it
+        if not EXCEL_AVAILABLE and len(export_formats) == 1:
+            st.warning("⚠️ Excel export is unavailable. Install openpyxl to enable Excel (.xlsx) exports.")
         
         model_inputs = session_state_to_model_inputs(st.session_state)
         
@@ -302,7 +322,7 @@ def render():
         timestamp = datetime.now().strftime('%Y%m%d_%H%M')
         
         # Prepare export data based on format
-        if export_format == "Excel (.xlsx)":
+        if export_format == "Excel (.xlsx)" and EXCEL_AVAILABLE:
             # Get DataFrames from session state if available
             income_statement_df = None
             cash_flow_df = None
