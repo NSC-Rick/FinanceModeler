@@ -330,6 +330,8 @@ def render():
             income_statement_df = None
             cash_flow_df = None
             dscr_series = None
+            revenue_df = None
+            kpis_df = None
             
             if hasattr(st.session_state, 'income_statement_df'):
                 income_statement_df = st.session_state.income_statement_df
@@ -337,12 +339,18 @@ def render():
                 cash_flow_df = st.session_state.cash_flow_df
             if hasattr(st.session_state, 'dscr_series'):
                 dscr_series = st.session_state.dscr_series
+            if hasattr(st.session_state, 'revenue_df'):
+                revenue_df = st.session_state.revenue_df
+            if hasattr(st.session_state, 'kpis_df'):
+                kpis_df = st.session_state.kpis_df
             
             export_data = export_scenario_to_excel(
                 model_inputs,
                 income_statement_df=income_statement_df,
                 cash_flow_df=cash_flow_df,
                 dscr_series_or_df=dscr_series,
+                revenue_df=revenue_df,
+                kpis_df=kpis_df,
                 include_raw_json=True
             )
             filename = f"{safe_name}_{timestamp}.xlsx"

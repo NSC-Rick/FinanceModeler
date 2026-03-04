@@ -95,6 +95,20 @@ def render():
             cash_flow_transposed.index.name = 'Line Item'
             st.session_state.cash_flow_df = cash_flow_transposed
         
+        # Revenue forecast transposed
+        if 'revenue_df' in outputs:
+            revenue_df = outputs['revenue_df']
+            revenue_transposed = revenue_df.T
+            revenue_transposed.columns = [f'Period {i}' for i in revenue_transposed.columns]
+            revenue_transposed.index.name = 'Revenue Stream'
+            st.session_state.revenue_df = revenue_transposed
+        
+        # KPIs transposed
+        kpis_transposed = kpis.T
+        kpis_transposed.columns = [f'Period {i}' for i in kpis_transposed.columns]
+        kpis_transposed.index.name = 'Metric'
+        st.session_state.kpis_df = kpis_transposed
+        
         # Store canonical DSCR series (if available)
         if canonical_metrics is not None:
             st.session_state.dscr_series = canonical_metrics['dscr_series']

@@ -2,6 +2,7 @@
 Scenario export utilities for JSON and Excel formats.
 """
 import json
+import re
 import pandas as pd
 from io import BytesIO
 from datetime import datetime
@@ -38,10 +39,28 @@ def sanitize_excel_columns(df):
     return df
 
 
+def sanitize_sheet_name(name: str) -> str:
+    """
+    Ensure sheet name is valid for Excel.
+    Excel worksheet names cannot contain: [ ] : * ? / \
+    Maximum length is 31 characters.
+    
+    Args:
+        name: Proposed sheet name
+    
+    Returns:
+        Sanitized sheet name safe for Excel
+    """
+    # Remove invalid characters
+    name = re.sub(r'[\[\]\*\?\/\\:]', '', name)
+    # Truncate to Excel's 31 character limit
+    return name[:31]
+
+
 def safe_to_excel(df, writer, sheet_name, index=True, **kwargs):
     """
-    Ensures DataFrame column names are Excel-compatible before writing to workbook.
-    This wrapper automatically sanitizes column names to prevent ValueError.
+    Ensures DataFrame column names and sheet name are Excel-compatible before writing to workbook.
+    This wrapper automatically sanitizes column names and sheet names to prevent ValueError.
     
     Args:
         df: DataFrame to write
@@ -51,7 +70,8 @@ def safe_to_excel(df, writer, sheet_name, index=True, **kwargs):
         **kwargs: Additional arguments passed to df.to_excel()
     """
     df = sanitize_excel_columns(df)
-    df.to_excel(writer, sheet_name=sheet_name, index=index, **kwargs)
+    safe_name = sanitize_sheet_name(sheet_name)
+    df.to_excel(writer, sheet_name=safe_name, index=index, **kwargs)
 
 
 def export_scenario_to_excel(
@@ -59,6 +79,8 @@ def export_scenario_to_excel(
     income_statement_df: Optional[pd.DataFrame] = None,
     cash_flow_df: Optional[pd.DataFrame] = None,
     dscr_series_or_df: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    revenue_df: Optional[pd.DataFrame] = None,
+    kpis_df: Optional[pd.DataFrame] = None,
     include_raw_json: bool = True
 ) -> bytes:
     """
@@ -72,6 +94,8 @@ def export_scenario_to_excel(
         income_statement_df: Income statement DataFrame (reused from UI display)
         cash_flow_df: Cash flow DataFrame (reused from UI display)
         dscr_series_or_df: Optional DSCR series or DataFrame
+        revenue_df: Optional revenue forecast DataFrame
+        kpis_df: Optional KPIs/metrics DataFrame
         include_raw_json: Whether to include Raw JSON sheet
     
     Returns:
@@ -94,15 +118,27 @@ def export_scenario_to_excel(
         # Sheet 2: Scenario Metadata
         _write_scenario_sheet(writer, model_inputs)
         
-        # Sheet 3: Income Statement (if provided)
+        # Sheet 3: Revenue Forecast (if provided)
+        if revenue_df is not None:
+            _write_revenue_sheet(writer, revenue_df)
+        
+        # Sheet 4: Income Statement (if provided)
         if income_statement_df is not None:
             _write_income_statement_sheet(writer, income_statement_df)
         
-        # Sheet 4: Cash Flow (if provided)
+        # Sheet 5: Cash Flow (if provided)
         if cash_flow_df is not None:
             _write_cash_flow_sheet(writer, cash_flow_df)
         
-        # Sheet 5: Raw JSON (optional)
+        # Sheet 6: Capital Stack (if available in model inputs)
+        if 'capital_stack' in model_inputs and model_inputs['capital_stack']:
+            _write_capital_stack_sheet(writer, model_inputs['capital_stack'])
+        
+        # Sheet 7: Key Metrics/KPIs (if provided)
+        if kpis_df is not None:
+            _write_kpis_sheet(writer, kpis_df)
+        
+        # Sheet 8: Raw JSON (optional)
         if include_raw_json:
             _write_raw_json_sheet(writer, model_inputs)
     
@@ -404,6 +440,65 @@ def _write_cash_flow_sheet(writer, cash_flow_df):
     worksheet.column_dimensions['A'].width = 25
     for col_idx in range(2, len(cash_flow_df.columns) + 2):
         worksheet.column_dimensions[chr(64 + col_idx)].width = 15
+
+
+def _write_revenue_sheet(writer, revenue_df):
+    """Write revenue forecast sheet."""
+    safe_to_excel(revenue_df, writer, 'Revenue_Forecast', index=True)
+    
+    # Auto-adjust column widths
+    worksheet = writer.sheets['Revenue_Forecast']
+    worksheet.column_dimensions['A'].width = 25
+    for col_idx in range(2, len(revenue_df.columns) + 2):
+        worksheet.column_dimensions[chr(64 + col_idx)].width = 15
+
+
+def _write_kpis_sheet(writer, kpis_df):
+    """Write KPIs/metrics sheet."""
+    safe_to_excel(kpis_df, writer, 'Key_Metrics', index=True)
+    
+    # Auto-adjust column widths
+    worksheet = writer.sheets['Key_Metrics']
+    worksheet.column_dimensions['A'].width = 25
+    for col_idx in range(2, len(kpis_df.columns) + 2):
+        worksheet.column_dimensions[chr(64 + col_idx)].width = 15
+
+
+def _write_capital_stack_sheet(writer, capital_stack):
+    """Write capital stack sheet from model inputs."""
+    # Build capital stack DataFrame
+    stack_data = []
+    
+    # Uses section
+    if 'uses' in capital_stack:
+        stack_data.append(['USES', ''])
+        for use_item in capital_stack['uses']:
+            stack_data.append([
+                use_item.get('name', 'Unnamed'),
+                use_item.get('amount', 0.0)
+            ])
+        total_uses = sum(item.get('amount', 0.0) for item in capital_stack['uses'])
+        stack_data.append(['Total Uses', total_uses])
+        stack_data.append(['', ''])
+    
+    # Sources section
+    if 'sources' in capital_stack:
+        stack_data.append(['SOURCES', ''])
+        for source_item in capital_stack['sources']:
+            stack_data.append([
+                source_item.get('name', 'Unnamed'),
+                source_item.get('amount', 0.0)
+            ])
+        total_sources = sum(item.get('amount', 0.0) for item in capital_stack['sources'])
+        stack_data.append(['Total Sources', total_sources])
+    
+    df = pd.DataFrame(stack_data, columns=['Item', 'Amount'])
+    safe_to_excel(df, writer, 'Capital_Stack', index=False)
+    
+    # Auto-adjust column widths
+    worksheet = writer.sheets['Capital_Stack']
+    worksheet.column_dimensions['A'].width = 30
+    worksheet.column_dimensions['B'].width = 20
 
 
 def _write_raw_json_sheet(writer, model_inputs):
