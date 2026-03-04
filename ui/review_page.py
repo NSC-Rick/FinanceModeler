@@ -60,6 +60,25 @@ def render():
         loan_schedule = outputs['loan_schedule']
         kpis = outputs['kpis']
         
+        # Store DataFrames in session state for Excel export
+        # Income statement transposed (rows = line items, columns = periods)
+        income_transposed = income_statement.T
+        income_transposed.columns = [f'Period {i}' for i in income_transposed.columns]
+        income_transposed.index.name = 'Line Item'
+        st.session_state.income_statement_df = income_transposed
+        
+        # Cash flow transposed
+        if 'cash_flow' in outputs:
+            cash_flow = outputs['cash_flow']
+            cash_flow_transposed = cash_flow.T
+            cash_flow_transposed.columns = [f'Period {i}' for i in cash_flow_transposed.columns]
+            cash_flow_transposed.index.name = 'Line Item'
+            st.session_state.cash_flow_df = cash_flow_transposed
+        
+        # DSCR series if available
+        if 'dscr' in kpis:
+            st.session_state.dscr_series = kpis['dscr']
+        
         # Calculate Year 1 metrics
         if st.session_state.time_mode == 'monthly':
             year1_periods = min(12, len(income_statement))

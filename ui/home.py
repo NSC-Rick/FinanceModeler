@@ -1,11 +1,13 @@
 import streamlit as st
 import json
+from datetime import datetime
 from engine.validation import (
     get_default_model_inputs,
     validate_scenario_json,
     session_state_to_model_inputs,
     model_inputs_to_session_state
 )
+from utils.exporters import export_scenario_to_excel
 
 
 def initialize_session_state():
@@ -272,15 +274,69 @@ def render():
     
     with col1:
         st.markdown("**💾 Save Scenario**")
+        
+        scenario_name = st.text_input(
+            "Scenario Name",
+            value="Business Scenario",
+            help="Name this scenario before downloading",
+            key="scenario_name_input"
+        )
+        
+        export_format = st.radio(
+            "Export Format",
+            ["Excel (.xlsx)", "JSON"],
+            horizontal=True,
+            help="Choose export format: Excel for spreadsheet analysis, JSON for data portability"
+        )
+        
         model_inputs = session_state_to_model_inputs(st.session_state)
-        json_str = json.dumps(model_inputs, indent=2)
+        
+        # Add scenario name to model inputs for Excel export
+        model_inputs['scenario_name'] = scenario_name
+        
+        # Sanitize filename: replace spaces with underscores, remove special chars
+        safe_name = scenario_name.strip().replace(" ", "_")
+        safe_name = "".join(c for c in safe_name if c.isalnum() or c in ('_', '-'))
+        
+        # Add timestamp to filename (YYYYMMDD_HHMM)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+        
+        # Prepare export data based on format
+        if export_format == "Excel (.xlsx)":
+            # Get DataFrames from session state if available
+            income_statement_df = None
+            cash_flow_df = None
+            dscr_series = None
+            
+            if hasattr(st.session_state, 'income_statement_df'):
+                income_statement_df = st.session_state.income_statement_df
+            if hasattr(st.session_state, 'cash_flow_df'):
+                cash_flow_df = st.session_state.cash_flow_df
+            if hasattr(st.session_state, 'dscr_series'):
+                dscr_series = st.session_state.dscr_series
+            
+            export_data = export_scenario_to_excel(
+                model_inputs,
+                income_statement_df=income_statement_df,
+                cash_flow_df=cash_flow_df,
+                dscr_series_or_df=dscr_series,
+                include_raw_json=True
+            )
+            filename = f"{safe_name}_{timestamp}.xlsx"
+            mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            button_label = "Download Scenario (Excel)"
+        else:
+            export_data = json.dumps(model_inputs, indent=2)
+            filename = f"{safe_name}_{timestamp}.json"
+            mime_type = "application/json"
+            button_label = "Download Scenario (JSON)"
         
         st.download_button(
-            label="Download Scenario",
-            data=json_str,
-            file_name="operating_model_scenario.json",
-            mime="application/json",
-            help="Download current model inputs as JSON file"
+            label=button_label,
+            data=export_data,
+            file_name=filename,
+            mime=mime_type,
+            help=f"Download current scenario as {export_format}"
         )
     
     with col2:
