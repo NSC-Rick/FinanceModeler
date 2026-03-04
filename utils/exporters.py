@@ -38,6 +38,22 @@ def sanitize_excel_columns(df):
     return df
 
 
+def safe_to_excel(df, writer, sheet_name, index=True, **kwargs):
+    """
+    Ensures DataFrame column names are Excel-compatible before writing to workbook.
+    This wrapper automatically sanitizes column names to prevent ValueError.
+    
+    Args:
+        df: DataFrame to write
+        writer: ExcelWriter object
+        sheet_name: Name of the sheet
+        index: Whether to write row index (default True)
+        **kwargs: Additional arguments passed to df.to_excel()
+    """
+    df = sanitize_excel_columns(df)
+    df.to_excel(writer, sheet_name=sheet_name, index=index, **kwargs)
+
+
 def export_scenario_to_excel(
     model_inputs: dict,
     income_statement_df: Optional[pd.DataFrame] = None,
@@ -340,7 +356,7 @@ def _write_scenario_sheet(writer, model_inputs):
     
     # Create DataFrame
     df = pd.DataFrame(metadata, columns=['Parameter', 'Value'])
-    df.to_excel(writer, sheet_name='Scenario', index=False)
+    safe_to_excel(df, writer, 'Scenario', index=False)
     
     # Auto-adjust column widths
     worksheet = writer.sheets['Scenario']
@@ -352,11 +368,8 @@ def _write_summary_sheet(writer, income_statement_df, cash_flow_df, dscr_series_
     """Write summary sheet with key metrics."""
     summary_df = build_summary_df(income_statement_df, cash_flow_df, dscr_series_or_df)
     
-    # Sanitize column names for Excel compatibility
-    summary_df = sanitize_excel_columns(summary_df)
-    
     # Write summary data starting at row 3 to leave room for header
-    summary_df.to_excel(writer, sheet_name='Summary', index=True, startrow=2)
+    safe_to_excel(summary_df, writer, 'Summary', index=True, startrow=2)
     
     # Add version metadata header
     worksheet = writer.sheets['Summary']
@@ -373,10 +386,7 @@ def _write_summary_sheet(writer, income_statement_df, cash_flow_df, dscr_series_
 
 def _write_income_statement_sheet(writer, income_statement_df):
     """Write income statement sheet using existing DataFrame."""
-    # Sanitize column names for Excel compatibility
-    income_statement_df = sanitize_excel_columns(income_statement_df)
-    
-    income_statement_df.to_excel(writer, sheet_name='Income_Statement')
+    safe_to_excel(income_statement_df, writer, 'Income_Statement', index=True)
     
     # Auto-adjust column widths
     worksheet = writer.sheets['Income_Statement']
@@ -387,10 +397,7 @@ def _write_income_statement_sheet(writer, income_statement_df):
 
 def _write_cash_flow_sheet(writer, cash_flow_df):
     """Write cash flow sheet using existing DataFrame."""
-    # Sanitize column names for Excel compatibility
-    cash_flow_df = sanitize_excel_columns(cash_flow_df)
-    
-    cash_flow_df.to_excel(writer, sheet_name='Cash_Flow')
+    safe_to_excel(cash_flow_df, writer, 'Cash_Flow', index=True)
     
     # Auto-adjust column widths
     worksheet = writer.sheets['Cash_Flow']
@@ -407,10 +414,7 @@ def _write_raw_json_sheet(writer, model_inputs):
     lines = json_str.split('\n')
     df = pd.DataFrame({'JSON': lines})
     
-    # Sanitize column names for Excel compatibility
-    df = sanitize_excel_columns(df)
-    
-    df.to_excel(writer, sheet_name='Raw_JSON', index=False)
+    safe_to_excel(df, writer, 'Raw_JSON', index=False)
     
     # Auto-adjust column width
     worksheet = writer.sheets['Raw_JSON']
