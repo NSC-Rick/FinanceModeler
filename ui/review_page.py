@@ -58,19 +58,27 @@ def render():
         
         # Store summary metrics in session_state for Modeler page
         income_statement = outputs['income_statement']
-        cash_flow_statement = outputs['cash_flow']
+        cash_flow_statement = outputs.get('cash_flow', None)
         loan_schedule = outputs['loan_schedule']
         kpis = outputs['kpis']
         
+        # Log warning if cash_flow is missing
+        if cash_flow_statement is None:
+            print("MODEL WARNING: cash_flow output missing from financial model")
+        
         # Compute canonical financial metrics (single source of truth)
+        # Only compute if cash_flow_statement is available
         owner_comp_config = model_inputs.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0})
-        canonical_metrics = compute_financial_metrics(
-            income_statement,
-            cash_flow_statement,
-            loan_schedule,
-            owner_comp_config,
-            model_inputs['time_mode']
-        )
+        if cash_flow_statement is not None:
+            canonical_metrics = compute_financial_metrics(
+                income_statement,
+                cash_flow_statement,
+                loan_schedule,
+                owner_comp_config,
+                model_inputs['time_mode']
+            )
+        else:
+            canonical_metrics = None
         
         # Store DataFrames in session state for Excel export
         # Income statement transposed (rows = line items, columns = periods)
@@ -87,8 +95,11 @@ def render():
             cash_flow_transposed.index.name = 'Line Item'
             st.session_state.cash_flow_df = cash_flow_transposed
         
-        # Store canonical DSCR series
-        st.session_state.dscr_series = canonical_metrics['dscr_series']
+        # Store canonical DSCR series (if available)
+        if canonical_metrics is not None:
+            st.session_state.dscr_series = canonical_metrics['dscr_series']
+        else:
+            st.session_state.dscr_series = kpis.get('dscr', pd.Series())
         
         # Calculate Year 1 metrics using canonical source
         if st.session_state.time_mode == 'monthly':
@@ -295,26 +306,30 @@ def render():
         with tab2:
             st.subheader("Cash Flow Statement")
             
-            cash_flow = outputs['cash_flow_statement'].copy()
-            
-            # Transpose: line items as rows, periods as columns
-            cash_flow_transposed = cash_flow.T
-            
-            # Rename columns to Period 0, Period 1, etc.
-            cash_flow_transposed.columns = [f'Period {i}' for i in cash_flow_transposed.columns]
-            cash_flow_transposed.index.name = 'Line Item'
-            
-            st.dataframe(
-                cash_flow_transposed.style.format("${:,.2f}"),
-                use_container_width=True
-            )
-            
-            st.download_button(
-                label="Download Cash Flow (CSV)",
-                data=cash_flow_transposed.to_csv(),
-                file_name="cash_flow.csv",
-                mime="text/csv"
-            )
+            # Defensive handling for missing cash_flow_statement
+            if 'cash_flow_statement' in outputs and outputs['cash_flow_statement'] is not None:
+                cash_flow = outputs['cash_flow_statement'].copy()
+                
+                # Transpose: line items as rows, periods as columns
+                cash_flow_transposed = cash_flow.T
+                
+                # Rename columns to Period 0, Period 1, etc.
+                cash_flow_transposed.columns = [f'Period {i}' for i in cash_flow_transposed.columns]
+                cash_flow_transposed.index.name = 'Line Item'
+                
+                st.dataframe(
+                    cash_flow_transposed.style.format("${:,.2f}"),
+                    use_container_width=True
+                )
+                
+                st.download_button(
+                    label="Download Cash Flow (CSV)",
+                    data=cash_flow_transposed.to_csv(),
+                    file_name="cash_flow.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.info("💡 Cash flow statement not available in current model configuration.")
         
         with tab3:
             st.subheader("Loan Amortization Schedule")
@@ -362,9 +377,15 @@ def render():
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                # Use canonical metrics for DSCR
-                avg_dscr = canonical_metrics['avg_dscr']
-                total_debt_service = canonical_metrics['total_debt_service']
+                # Use canonical metrics for DSCR (if available)
+                if canonical_metrics is not None:
+                    avg_dscr = canonical_metrics['avg_dscr']
+                    total_debt_service = canonical_metrics['total_debt_service']
+                else:
+                    # Fallback to KPIs if canonical metrics not available
+                    dscr_values = kpis.get('dscr', pd.Series()).dropna()
+                    avg_dscr = dscr_values.mean() if len(dscr_values) > 0 else None
+                    total_debt_service = kpis.get('debt_service', pd.Series()).sum()
                 
                 if total_debt_service == 0 or avg_dscr is None:
                     # Debt-free scenario
@@ -531,22 +552,24 @@ def render():
             )
             st.plotly_chart(fig_revenue, use_container_width=True)
             
-            fig_cash = go.Figure()
-            fig_cash.add_trace(go.Scatter(
-                x=list(range(st.session_state.periods)),
-                y=outputs['cash_flow_statement']['ending_cash'].values,
-                mode='lines+markers',
-                name='Ending Cash',
-                line=dict(color='#2ca02c', width=2),
-                fill='tozeroy'
-            ))
-            fig_cash.update_layout(
-                title="Ending Cash Balance",
-                xaxis_title="Period",
-                yaxis_title="Cash ($)",
-                hovermode='x unified'
-            )
-            st.plotly_chart(fig_cash, use_container_width=True)
+            # Ending cash chart (only if cash_flow_statement available)
+            if 'cash_flow_statement' in outputs and outputs['cash_flow_statement'] is not None:
+                fig_cash = go.Figure()
+                fig_cash.add_trace(go.Scatter(
+                    x=list(range(st.session_state.periods)),
+                    y=outputs['cash_flow_statement']['ending_cash'].values,
+                    mode='lines+markers',
+                    name='Ending Cash',
+                    line=dict(color='#2ca02c', width=2),
+                    fill='tozeroy'
+                ))
+                fig_cash.update_layout(
+                    title="Ending Cash Balance",
+                    xaxis_title="Period",
+                    yaxis_title="Cash ($)",
+                    hovermode='x unified'
+                )
+                st.plotly_chart(fig_cash, use_container_width=True)
             
             dscr_data = kpis[kpis['dscr'] > 0]['dscr']
             if len(dscr_data) > 0:
