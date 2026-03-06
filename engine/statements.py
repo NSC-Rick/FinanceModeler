@@ -2,6 +2,24 @@ import pandas as pd
 import numpy as np
 
 
+def calculate_working_capital_requirement(inventory, ar, ap):
+    """
+    Calculate total working capital required to operate the business.
+    
+    Working capital = Current Assets - Current Liabilities
+    = (Inventory + Accounts Receivable) - Accounts Payable
+    
+    Args:
+        inventory: Inventory balance
+        ar: Accounts receivable balance
+        ap: Accounts payable balance
+    
+    Returns:
+        Total working capital requirement
+    """
+    return inventory + ar - ap
+
+
 def build_income_statement(revenue_total, cogs, payroll_total, opex_total, interest_expense):
     """
     Build income statement.
@@ -41,6 +59,8 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     """
     Build cash flow statement with working capital adjustments and owner distributions.
     
+    Automatically injects working capital in Period 0 to prevent negative startup cash.
+    
     Args:
         net_income: Series of net income per period
         loan_principal: Series of loan principal payments per period
@@ -54,31 +74,56 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
         owner_distribution: Optional Series of owner distribution per period
     
     Returns:
-        DataFrame with cash flow statement
+        DataFrame with cash flow statement including working_capital_injection row
     """
     periods = len(net_income)
     
     days_in_period = 30 if time_mode == 'monthly' else 365
     
+    # Calculate working capital balances
     ar_balance = revenue_total * (ar_days / days_in_period)
     ap_balance = cogs * (ap_days / days_in_period)
     inventory_balance = cogs * (inventory_days / days_in_period)
     
+    # Calculate changes in working capital
     ar_change = ar_balance.diff().fillna(ar_balance.iloc[0] if len(ar_balance) > 0 else 0)
     ap_change = ap_balance.diff().fillna(ap_balance.iloc[0] if len(ap_balance) > 0 else 0)
     inventory_change = inventory_balance.diff().fillna(inventory_balance.iloc[0] if len(inventory_balance) > 0 else 0)
     
+    # Calculate working capital requirement for Period 0
+    if len(ar_balance) > 0:
+        period_0_inventory = inventory_balance.iloc[0]
+        period_0_ar = ar_balance.iloc[0]
+        period_0_ap = ap_balance.iloc[0]
+        working_capital_requirement = calculate_working_capital_requirement(
+            period_0_inventory, 
+            period_0_ar, 
+            period_0_ap
+        )
+    else:
+        working_capital_requirement = 0
+    
+    # Create working capital injection series (inject in Period 0 only)
+    wc_injection = pd.Series([0.0] * periods, index=range(periods))
+    if working_capital_requirement > 0:
+        wc_injection.iloc[0] = working_capital_requirement
+    
+    # Calculate operating cash flow
     operating_cash_flow = net_income - ar_change + ap_change - inventory_change
     
+    # Financing cash flow includes loan principal payments
     financing_cash_flow = -loan_principal
     
+    # Owner distribution
     if owner_distribution is not None:
         owner_dist = owner_distribution
     else:
         owner_dist = pd.Series([0.0] * periods, index=range(periods))
     
-    net_cash_flow = operating_cash_flow + financing_cash_flow - owner_dist
+    # Net cash flow includes working capital injection
+    net_cash_flow = operating_cash_flow + financing_cash_flow + wc_injection - owner_dist
     
+    # Ending cash balance
     ending_cash = net_cash_flow.cumsum()
     
     return pd.DataFrame({
@@ -87,6 +132,7 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
         'ap_change': ap_change,
         'inventory_change': inventory_change,
         'operating_cash_flow': operating_cash_flow,
+        'working_capital_injection': wc_injection,
         'financing_cash_flow': financing_cash_flow,
         'owner_distribution': owner_dist,
         'net_cash_flow': net_cash_flow,

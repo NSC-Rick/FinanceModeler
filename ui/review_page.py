@@ -469,6 +469,71 @@ def render():
             
             st.divider()
             
+            # Working Capital Panel
+            st.markdown("### 💼 Working Capital Requirement")
+            
+            # Get working capital data from cash flow statement
+            if 'cash_flow_statement' in outputs and outputs['cash_flow_statement'] is not None:
+                cash_flow = outputs['cash_flow_statement']
+                
+                if 'working_capital_injection' in cash_flow.columns:
+                    wc_injection = cash_flow['working_capital_injection'].iloc[0]
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.metric(
+                            label="💰 Working Capital Injection",
+                            value=safe_currency(wc_injection, decimals=0),
+                            help="Capital injected in Period 0 to fund inventory, AR, and AP requirements"
+                        )
+                        
+                        if wc_injection > 0:
+                            st.info(f"✅ Injected in Period 0")
+                        else:
+                            st.success("✅ No injection needed")
+                    
+                    with col2:
+                        # Calculate Period 0 ending cash
+                        period_0_ending_cash = cash_flow['ending_cash'].iloc[0]
+                        st.metric(
+                            label="💵 Period 0 Ending Cash",
+                            value=safe_currency(period_0_ending_cash, decimals=0),
+                            help="Cash balance at end of Period 0 after working capital injection"
+                        )
+                        
+                        if period_0_ending_cash >= 0:
+                            st.success("✅ Positive cash position")
+                        else:
+                            st.error("❌ Negative cash position")
+                    
+                    with col3:
+                        # Show working capital components if available
+                        if 'ar_change' in cash_flow.columns and 'inventory_change' in cash_flow.columns and 'ap_change' in cash_flow.columns:
+                            ar_period_0 = cash_flow['ar_change'].iloc[0]
+                            inv_period_0 = cash_flow['inventory_change'].iloc[0]
+                            ap_period_0 = cash_flow['ap_change'].iloc[0]
+                            
+                            st.metric(
+                                label="📊 WC Components (Period 0)",
+                                value=safe_currency(wc_injection, decimals=0),
+                                help=f"AR: {safe_currency(ar_period_0, decimals=0)}\nInventory: {safe_currency(inv_period_0, decimals=0)}\nAP: {safe_currency(ap_period_0, decimals=0)}"
+                            )
+                            
+                            # Show breakdown
+                            with st.expander("📋 Working Capital Breakdown"):
+                                st.markdown(f"""
+                                **Period 0 Working Capital Components:**
+                                - **Accounts Receivable:** {safe_currency(ar_period_0, decimals=0)}
+                                - **Inventory:** {safe_currency(inv_period_0, decimals=0)}
+                                - **Accounts Payable:** {safe_currency(ap_period_0, decimals=0)}
+                                - **Net Requirement:** {safe_currency(wc_injection, decimals=0)}
+                                
+                                *Working Capital = (AR + Inventory) - AP*
+                                """)
+            
+            st.divider()
+            
             st.markdown("### 💵 Financial Performance")
             
             col1, col2, col3, col4 = st.columns(4)
