@@ -2,6 +2,36 @@ import pandas as pd
 import numpy as np
 
 
+def safe_divide(numerator: float, denominator: float) -> float:
+    """
+    Safely divide two numbers, returning 0.0 if denominator is zero.
+    
+    Args:
+        numerator: Numerator value
+        denominator: Denominator value
+    
+    Returns:
+        Result of division, or 0.0 if denominator is zero
+    """
+    if denominator in (0, 0.0, None) or pd.isna(denominator):
+        return 0.0
+    return numerator / denominator
+
+
+def calculate_margin(value: float, revenue: float) -> float:
+    """
+    Calculate margin percentage.
+    
+    Args:
+        value: Numerator (profit, EBITDA, etc.)
+        revenue: Revenue (denominator)
+    
+    Returns:
+        Margin as decimal (e.g., 0.22 for 22%)
+    """
+    return safe_divide(value, revenue)
+
+
 def calculate_working_capital_requirement(inventory, ar, ap):
     """
     Calculate total working capital required to operate the business.
@@ -335,33 +365,35 @@ def calculate_kpis(income_statement, cash_flow_statement, loan_schedule, pnl_sta
         
         revenue = pnl_statement['revenue']
         gross_profit = pnl_statement['gross_profit']
+        ebitda_series = pnl_statement['ebitda']
         operating_expenses = pnl_statement['operating_expenses']
         
+        # Calculate margins using safe_divide helper
         net_margin = pd.Series(0.0, index=revenue.index)
         gross_margin = pd.Series(0.0, index=revenue.index)
+        ebitda_margin = pd.Series(0.0, index=revenue.index)
         overhead_load = pd.Series(0.0, index=revenue.index)
         payroll_pct_revenue = pd.Series(0.0, index=revenue.index)
         contribution_margin = pd.Series(0.0, index=revenue.index)
         
         for i in revenue.index:
-            if revenue.iloc[i] > 0:
-                net_margin.iloc[i] = pnl_statement['net_income'].iloc[i] / revenue.iloc[i]
-                gross_margin.iloc[i] = gross_profit.iloc[i] / revenue.iloc[i]
-                overhead_load.iloc[i] = operating_expenses.iloc[i] / revenue.iloc[i]
-                
-                total_payroll = pnl_statement['cogs_direct_labor'].iloc[i] + pnl_statement['indirect_payroll'].iloc[i]
-                payroll_pct_revenue.iloc[i] = total_payroll / revenue.iloc[i]
-                
-                contribution_margin.iloc[i] = (gross_profit.iloc[i] - pnl_statement['indirect_payroll'].iloc[i]) / revenue.iloc[i]
-            else:
-                net_margin.iloc[i] = 0
-                gross_margin.iloc[i] = 0
-                overhead_load.iloc[i] = 0
-                payroll_pct_revenue.iloc[i] = 0
-                contribution_margin.iloc[i] = 0
+            # Use safe_divide for all margin calculations
+            net_margin.iloc[i] = calculate_margin(pnl_statement['net_income'].iloc[i], revenue.iloc[i])
+            gross_margin.iloc[i] = calculate_margin(gross_profit.iloc[i], revenue.iloc[i])
+            ebitda_margin.iloc[i] = calculate_margin(ebitda_series.iloc[i], revenue.iloc[i])
+            overhead_load.iloc[i] = calculate_margin(operating_expenses.iloc[i], revenue.iloc[i])
+            
+            total_payroll = pnl_statement['cogs_direct_labor'].iloc[i] + pnl_statement['indirect_payroll'].iloc[i]
+            payroll_pct_revenue.iloc[i] = calculate_margin(total_payroll, revenue.iloc[i])
+            
+            # Contribution margin = (Gross Profit - Indirect Payroll) / Revenue
+            # This represents contribution after variable costs and before fixed overhead
+            contribution = gross_profit.iloc[i] - pnl_statement['indirect_payroll'].iloc[i]
+            contribution_margin.iloc[i] = calculate_margin(contribution, revenue.iloc[i])
         
         kpi_data['net_margin'] = net_margin
         kpi_data['gross_margin'] = gross_margin
+        kpi_data['ebitda_margin'] = ebitda_margin
         kpi_data['overhead_load'] = overhead_load
         kpi_data['payroll_pct_revenue'] = payroll_pct_revenue
         kpi_data['contribution_margin'] = contribution_margin
