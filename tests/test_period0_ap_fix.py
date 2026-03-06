@@ -226,13 +226,14 @@ def test_acquisition_with_explicit_starting_ap():
     print("✅ TEST PASSED: Acquisition with explicit starting AP works correctly")
 
 
-def test_working_capital_injection_calculation():
+def test_working_capital_requirement_calculation():
     """
-    TEST: Working capital injection should account for zero Period 0 AP
+    TEST: Working capital requirement should account for zero Period 0 AP
     
     Expected:
-    - WC injection = (AR + Inventory) - AP
-    - With AP = 0 in Period 0, WC injection is higher
+    - WC requirement = (AR + Inventory) - AP
+    - With AP = 0 in Period 0, WC requirement is higher
+    - Capital metrics should calculate cash injection needed
     """
     # Setup test data
     periods = 12
@@ -261,23 +262,31 @@ def test_working_capital_injection_calculation():
         capital_stack_enabled=False
     )
     
-    # Calculate expected WC injection
+    # Calculate expected WC requirement
     # AR = 50000 * (30/30) = 50000
     # Inventory = 20000 * (45/30) = 30000
     # AP = 0 (forced to zero in Period 0)
     # WC = 50000 + 30000 - 0 = 80000
     
     expected_wc = 80000.0
-    actual_wc = cash_flow['working_capital_injection'].iloc[0]
+    period_0_debug = cash_flow.attrs.get('period_0_debug', {})
+    actual_wc = period_0_debug.get('working_capital_requirement', 0)
     
     assert abs(actual_wc - expected_wc) < 0.01, \
-        f"WC injection should be {expected_wc}, got {actual_wc}"
+        f"WC requirement should be {expected_wc}, got {actual_wc}"
     
-    # Period 0 ending cash should be positive due to WC injection
-    assert cash_flow['ending_cash'].iloc[0] > 0, \
-        "Period 0 ending cash should be positive with WC injection"
+    # Period 0 ending cash should be negative (no artificial injection)
+    assert cash_flow['ending_cash'].iloc[0] < 0, \
+        "Period 0 ending cash should be negative without startup capital"
     
-    print("✅ TEST PASSED: Working capital injection calculated correctly with zero AP")
+    # Capital metrics should show cash injection required
+    capital_metrics = cash_flow.attrs.get('capital_metrics', {})
+    cash_injection_required = capital_metrics.get('cash_injection_required', 0)
+    
+    assert cash_injection_required > 0, \
+        "Cash injection should be required for startup scenario"
+    
+    print("✅ TEST PASSED: Working capital requirement calculated correctly with zero AP")
 
 
 if __name__ == '__main__':
@@ -286,7 +295,7 @@ if __name__ == '__main__':
     test_existing_business_with_starting_ap()
     test_period_1_onward_ap_builds_normally()
     test_acquisition_with_explicit_starting_ap()
-    test_working_capital_injection_calculation()
+    test_working_capital_requirement_calculation()
     
     print("\n" + "="*70)
     print("✅ ALL PERIOD-0 AP FIX TESTS PASSED")

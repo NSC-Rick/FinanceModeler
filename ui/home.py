@@ -275,7 +275,7 @@ def render():
     
     ### Getting Started
     
-    1. **Configure Time Mode** below (Monthly = 60 periods, Annual = 5 periods)
+    1. **Configure Time Mode** below (Monthly = 36 periods / 3 years, Annual = 5 periods)
     2. Navigate through the sidebar to input your data
     3. Review your financial statements and KPIs
     

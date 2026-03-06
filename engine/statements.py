@@ -145,7 +145,7 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
             ap_ending_balance.iloc[period] = target_ap_balance.iloc[period]
             inventory_ending_balance.iloc[period] = target_inventory_balance.iloc[period]
     
-    # Calculate working capital requirement for Period 0
+    # Calculate working capital requirement for Period 0 (for diagnostics only)
     # Note: This uses ending balances, not changes
     if len(target_ar_balance) > 0:
         period_0_inventory = inventory_ending_balance.iloc[0]
@@ -159,11 +159,6 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     else:
         working_capital_requirement = 0
     
-    # Create working capital injection series (inject in Period 0 only)
-    wc_injection = pd.Series([0.0] * periods, index=range(periods))
-    if working_capital_requirement > 0:
-        wc_injection.iloc[0] = working_capital_requirement
-    
     # Calculate operating cash flow
     operating_cash_flow = net_income - ar_change + ap_change - inventory_change
     
@@ -176,11 +171,33 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     else:
         owner_dist = pd.Series([0.0] * periods, index=range(periods))
     
-    # Net cash flow includes working capital injection
-    net_cash_flow = operating_cash_flow + financing_cash_flow + wc_injection - owner_dist
+    # Net cash flow (financially pure - no artificial injections)
+    net_cash_flow = operating_cash_flow + financing_cash_flow - owner_dist
     
-    # Ending cash balance
-    ending_cash = net_cash_flow.cumsum()
+    # Beginning cash defaults to 0 (startup scenario)
+    beginning_cash = 0.0
+    
+    # Ending cash balance: beginning cash + cumulative net cash flow
+    ending_cash = beginning_cash + net_cash_flow.cumsum()
+    
+    # Calculate capital requirement metrics
+    lowest_cash_balance = ending_cash.min()
+    cash_injection_required = max(0, -lowest_cash_balance)
+    lowest_cash_period = int(ending_cash.idxmin())
+    recommended_starting_cash = round(cash_injection_required * 1.10, 0)
+    
+    # Determine break-even period (first period where cash >= 0)
+    break_even_period = None
+    for i, val in enumerate(ending_cash):
+        if val >= 0:
+            break_even_period = i
+            break
+    
+    # Calculate cash runway
+    if lowest_cash_balance < 0:
+        cash_runway_periods = lowest_cash_period
+    else:
+        cash_runway_periods = None
     
     # Diagnostic metadata for troubleshooting
     period_0_debug = {
@@ -192,6 +209,17 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
         'target_inventory_balance': target_inventory_balance.iloc[0] if len(target_inventory_balance) > 0 else 0,
         'is_startup_like': is_startup_like,
         'ap_change_period_0': ap_change.iloc[0] if len(ap_change) > 0 else 0,
+        'working_capital_requirement': working_capital_requirement,
+    }
+    
+    # Capital requirement metrics
+    capital_metrics = {
+        'lowest_cash_balance': lowest_cash_balance,
+        'cash_injection_required': cash_injection_required,
+        'lowest_cash_period': lowest_cash_period,
+        'recommended_starting_cash': recommended_starting_cash,
+        'break_even_period': break_even_period,
+        'cash_runway_periods': cash_runway_periods,
     }
     
     result_df = pd.DataFrame({
@@ -200,15 +228,15 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
         'ap_change': ap_change,
         'inventory_change': inventory_change,
         'operating_cash_flow': operating_cash_flow,
-        'working_capital_injection': wc_injection,
         'financing_cash_flow': financing_cash_flow,
         'owner_distribution': owner_dist,
         'net_cash_flow': net_cash_flow,
         'ending_cash': ending_cash
     })
     
-    # Attach debug metadata as attribute
+    # Attach metadata as attributes
     result_df.attrs['period_0_debug'] = period_0_debug
+    result_df.attrs['capital_metrics'] = capital_metrics
     
     return result_df
 

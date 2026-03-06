@@ -350,6 +350,59 @@ def render():
                     file_name="cash_flow.csv",
                     mime="text/csv"
                 )
+                
+                # Cash Requirement Summary Panel
+                st.divider()
+                st.subheader("💰 Cash Requirement Summary")
+                
+                # Get capital metrics from cash flow statement attributes
+                capital_metrics = cash_flow.attrs.get('capital_metrics', {})
+                
+                if capital_metrics:
+                    lowest_cash_balance = capital_metrics.get('lowest_cash_balance', 0)
+                    cash_injection_required = capital_metrics.get('cash_injection_required', 0)
+                    lowest_cash_period = capital_metrics.get('lowest_cash_period', 0)
+                    recommended_starting_cash = capital_metrics.get('recommended_starting_cash', 0)
+                    break_even_period = capital_metrics.get('break_even_period', None)
+                    
+                    # Warning indicator if capital is required
+                    if cash_injection_required > 0:
+                        st.warning(
+                            f"⚠️ **Startup capital required:** ${cash_injection_required:,.0f} minimum to avoid negative cash"
+                        )
+                    else:
+                        st.success("✅ **No additional startup capital required** - business generates positive cash from Period 0")
+                    
+                    # Summary table
+                    summary_df = pd.DataFrame({
+                        "Metric": [
+                            "Lowest Cash Balance",
+                            "Occurs In Period",
+                            "Minimum Cash Injection Required",
+                            "Recommended Starting Cash (10% buffer)",
+                            "Break-Even Period"
+                        ],
+                        "Value": [
+                            f"${lowest_cash_balance:,.0f}",
+                            lowest_cash_period,
+                            f"${cash_injection_required:,.0f}",
+                            f"${recommended_starting_cash:,.0f}",
+                            break_even_period if break_even_period is not None else "N/A"
+                        ]
+                    })
+                    
+                    st.table(summary_df)
+                    
+                    # Explanatory note
+                    st.caption("""
+                    **How to use this summary:**
+                    - **Lowest Cash Balance:** The most negative cash point in your projection
+                    - **Minimum Cash Injection:** The amount needed to keep cash non-negative
+                    - **Recommended Starting Cash:** Includes a 10% safety buffer for practical planning
+                    - **Break-Even Period:** First period where the business becomes cash positive
+                    """)
+                else:
+                    st.info("💡 Capital requirement metrics not available.")
             else:
                 st.info("💡 Cash flow statement not available in current model configuration.")
         
@@ -484,22 +537,28 @@ def render():
             if 'cash_flow_statement' in outputs and outputs['cash_flow_statement'] is not None:
                 cash_flow = outputs['cash_flow_statement']
                 
-                if 'working_capital_injection' in cash_flow.columns:
-                    wc_injection = cash_flow['working_capital_injection'].iloc[0]
+                # Get working capital requirement from debug metadata
+                period_0_debug = cash_flow.attrs.get('period_0_debug', {})
+                wc_requirement = period_0_debug.get('working_capital_requirement', 0)
+                
+                if 'ar_change' in cash_flow.columns and 'inventory_change' in cash_flow.columns and 'ap_change' in cash_flow.columns:
+                    ar_period_0 = cash_flow['ar_change'].iloc[0]
+                    inv_period_0 = cash_flow['inventory_change'].iloc[0]
+                    ap_period_0 = cash_flow['ap_change'].iloc[0]
                     
                     col1, col2, col3 = st.columns(3)
                     
                     with col1:
                         st.metric(
-                            label="💰 Working Capital Injection",
-                            value=safe_currency(wc_injection, decimals=0),
-                            help="Capital injected in Period 0 to fund inventory, AR, and AP requirements"
+                            label="💰 Working Capital Requirement",
+                            value=safe_currency(wc_requirement, decimals=0),
+                            help="Total working capital needed for Period 0 operations (AR + Inventory - AP)"
                         )
                         
-                        if wc_injection > 0:
-                            st.info(f"✅ Injected in Period 0")
+                        if wc_requirement > 0:
+                            st.info(f"✅ Required for operations")
                         else:
-                            st.success("✅ No injection needed")
+                            st.success("✅ No requirement")
                     
                     with col2:
                         # Calculate Period 0 ending cash
@@ -507,38 +566,35 @@ def render():
                         st.metric(
                             label="💵 Period 0 Ending Cash",
                             value=safe_currency(period_0_ending_cash, decimals=0),
-                            help="Cash balance at end of Period 0 after working capital injection"
+                            help="Cash balance at end of Period 0 (may be negative without startup capital)"
                         )
                         
                         if period_0_ending_cash >= 0:
                             st.success("✅ Positive cash position")
                         else:
-                            st.error("❌ Negative cash position")
+                            st.error("❌ Negative cash - see Cash Requirement Summary below")
                     
                     with col3:
-                        # Show working capital components if available
-                        if 'ar_change' in cash_flow.columns and 'inventory_change' in cash_flow.columns and 'ap_change' in cash_flow.columns:
-                            ar_period_0 = cash_flow['ar_change'].iloc[0]
-                            inv_period_0 = cash_flow['inventory_change'].iloc[0]
-                            ap_period_0 = cash_flow['ap_change'].iloc[0]
+                        st.metric(
+                            label="📊 WC Components (Period 0)",
+                            value=safe_currency(wc_requirement, decimals=0),
+                            help=f"AR: {safe_currency(ar_period_0, decimals=0)}\nInventory: {safe_currency(inv_period_0, decimals=0)}\nAP: {safe_currency(ap_period_0, decimals=0)}"
+                        )
+                        
+                        # Show breakdown
+                        with st.expander("📋 Working Capital Breakdown"):
+                            st.markdown(f"""
+                            **Period 0 Working Capital Components:**
+                            - **Accounts Receivable:** {safe_currency(ar_period_0, decimals=0)}
+                            - **Inventory:** {safe_currency(inv_period_0, decimals=0)}
+                            - **Accounts Payable:** {safe_currency(ap_period_0, decimals=0)}
+                            - **Net Requirement:** {safe_currency(wc_requirement, decimals=0)}
                             
-                            st.metric(
-                                label="📊 WC Components (Period 0)",
-                                value=safe_currency(wc_injection, decimals=0),
-                                help=f"AR: {safe_currency(ar_period_0, decimals=0)}\nInventory: {safe_currency(inv_period_0, decimals=0)}\nAP: {safe_currency(ap_period_0, decimals=0)}"
-                            )
+                            *Working Capital = (AR + Inventory) - AP*
                             
-                            # Show breakdown
-                            with st.expander("📋 Working Capital Breakdown"):
-                                st.markdown(f"""
-                                **Period 0 Working Capital Components:**
-                                - **Accounts Receivable:** {safe_currency(ar_period_0, decimals=0)}
-                                - **Inventory:** {safe_currency(inv_period_0, decimals=0)}
-                                - **Accounts Payable:** {safe_currency(ap_period_0, decimals=0)}
-                                - **Net Requirement:** {safe_currency(wc_injection, decimals=0)}
-                                
-                                *Working Capital = (AR + Inventory) - AP*
-                                """)
+                            Note: This shows the working capital requirement. The actual cash needed
+                            is shown in the **Cash Requirement Summary** below the Cash Flow Statement.
+                            """)
             
             st.divider()
             
