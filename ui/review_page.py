@@ -49,7 +49,11 @@ def render():
         'owner_compensation': st.session_state.owner_compensation,
         'mode': st.session_state.mode,
         'capital_stack': st.session_state.capital_stack,
-        'seasonality': st.session_state.seasonality
+        'seasonality': st.session_state.seasonality,
+        'business_stage': st.session_state.business_stage,
+        'starting_ar_balance': st.session_state.starting_ar_balance,
+        'starting_ap_balance': st.session_state.starting_ap_balance,
+        'starting_inventory_balance': st.session_state.starting_inventory_balance
     }
     
     try:
@@ -319,6 +323,10 @@ def render():
         
         with tab2:
             st.subheader("Cash Flow Statement")
+            
+            # Show note about AP behavior in startup/acquisition mode
+            if model_inputs.get('business_stage') in ['startup', 'acquisition'] and model_inputs.get('starting_ap_balance', 0.0) == 0:
+                st.info("ℹ️ **Startup/Acquisition mode:** Period 0 assumes no opening Accounts Payable unless explicitly entered. This prevents overstating liquidity from phantom supplier credit.")
             
             # Defensive handling for missing cash_flow_statement
             if 'cash_flow_statement' in outputs and outputs['cash_flow_statement'] is not None:

@@ -24,6 +24,70 @@ def render():
     
     st.divider()
     
+    # Business Stage Selector (Advanced Mode Only)
+    if st.session_state.mode == "Advanced":
+        st.markdown("### 🏢 Business Stage")
+        
+        business_stage_display = st.selectbox(
+            "Business Stage",
+            ["Startup", "Acquisition", "Existing Business"],
+            index=["startup", "acquisition", "existing"].index(st.session_state.business_stage),
+            help="Determines Period 0 working capital behavior. Startup/Acquisition prevents phantom AP creation."
+        )
+        
+        # Map display value to internal value
+        stage_mapping = {
+            "Startup": "startup",
+            "Acquisition": "acquisition",
+            "Existing Business": "existing"
+        }
+        st.session_state.business_stage = stage_mapping[business_stage_display]
+        
+        # Show explanation based on stage
+        if st.session_state.business_stage in ['startup', 'acquisition']:
+            st.info("ℹ️ **Startup/Acquisition mode:** Period 0 assumes no opening Accounts Payable unless explicitly entered below. This prevents overstating liquidity.")
+        else:
+            st.info("ℹ️ **Existing Business mode:** Period 0 working capital changes calculated from starting balances entered below.")
+        
+        # Advanced Starting Balances (Optional)
+        with st.expander("⚙️ Advanced Starting Balances (Optional)", expanded=False):
+            st.markdown("""
+            **Optional:** Enter explicit starting balances for working capital accounts.
+            - Leave at zero for true startup/acquisition scenarios
+            - Enter values for existing business conversions or specific scenarios
+            """)
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.session_state.starting_ar_balance = st.number_input(
+                    "Starting AR Balance",
+                    min_value=0.0,
+                    value=st.session_state.starting_ar_balance,
+                    step=1000.0,
+                    help="Accounts Receivable balance at Period 0 start"
+                )
+            
+            with col2:
+                st.session_state.starting_ap_balance = st.number_input(
+                    "Starting AP Balance",
+                    min_value=0.0,
+                    value=st.session_state.starting_ap_balance,
+                    step=1000.0,
+                    help="Accounts Payable balance at Period 0 start (creates supplier credit)"
+                )
+            
+            with col3:
+                st.session_state.starting_inventory_balance = st.number_input(
+                    "Starting Inventory Balance",
+                    min_value=0.0,
+                    value=st.session_state.starting_inventory_balance,
+                    step=1000.0,
+                    help="Inventory balance at Period 0 start"
+                )
+        
+        st.divider()
+    
     # Capital Stack Advisory Layer (Collapsible) - Advanced Mode Only
     if st.session_state.mode == "Advanced":
         with st.expander("💼 Acquisition Capital Stack (Optional)", expanded=False):

@@ -150,6 +150,18 @@ def initialize_session_state():
             'amount': 0.0
         }
     
+    if 'business_stage' not in st.session_state:
+        st.session_state.business_stage = 'acquisition'
+    
+    if 'starting_ar_balance' not in st.session_state:
+        st.session_state.starting_ar_balance = 0.0
+    
+    if 'starting_ap_balance' not in st.session_state:
+        st.session_state.starting_ap_balance = 0.0
+    
+    if 'starting_inventory_balance' not in st.session_state:
+        st.session_state.starting_inventory_balance = 0.0
+    
     if 'capital_stack' not in st.session_state:
         st.session_state.capital_stack = {
             'enabled': False,

@@ -127,7 +127,12 @@ def build_model(model_inputs):
         revenue_df['total'],
         cogs,
         time_mode,
-        owner_distribution
+        owner_distribution,
+        business_stage=model_inputs.get('business_stage', 'acquisition'),
+        starting_ar_balance=model_inputs.get('starting_ar_balance', 0.0),
+        starting_ap_balance=model_inputs.get('starting_ap_balance', 0.0),
+        starting_inventory_balance=model_inputs.get('starting_inventory_balance', 0.0),
+        capital_stack_enabled=model_inputs.get('capital_stack', {}).get('enabled', False)
     )
     
     kpis = calculate_kpis(

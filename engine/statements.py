@@ -55,11 +55,15 @@ def build_income_statement(revenue_total, cogs, payroll_total, opex_total, inter
 
 
 def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days, ap_days, inventory_days, 
-                               revenue_total, cogs, time_mode, owner_distribution=None):
+                               revenue_total, cogs, time_mode, owner_distribution=None, 
+                               business_stage='acquisition', starting_ar_balance=0.0, 
+                               starting_ap_balance=0.0, starting_inventory_balance=0.0,
+                               capital_stack_enabled=False):
     """
     Build cash flow statement with working capital adjustments and owner distributions.
     
     Automatically injects working capital in Period 0 to prevent negative startup cash.
+    Prevents Period-0 AP double counting in startup/acquisition scenarios.
     
     Args:
         net_income: Series of net income per period
@@ -72,6 +76,11 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
         cogs: Series of COGS per period
         time_mode: 'monthly' or 'annual'
         owner_distribution: Optional Series of owner distribution per period
+        business_stage: 'startup', 'acquisition', or 'existing'
+        starting_ar_balance: Explicit starting AR balance (default 0.0)
+        starting_ap_balance: Explicit starting AP balance (default 0.0)
+        starting_inventory_balance: Explicit starting inventory balance (default 0.0)
+        capital_stack_enabled: Whether capital stack funding is enabled
     
     Returns:
         DataFrame with cash flow statement including working_capital_injection row
@@ -80,21 +89,68 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     
     days_in_period = 30 if time_mode == 'monthly' else 365
     
-    # Calculate working capital balances
-    ar_balance = revenue_total * (ar_days / days_in_period)
-    ap_balance = cogs * (ap_days / days_in_period)
-    inventory_balance = cogs * (inventory_days / days_in_period)
+    # Determine if this is a startup-like scenario
+    is_startup_like = business_stage in ['startup', 'acquisition'] or capital_stack_enabled
     
-    # Calculate changes in working capital
-    ar_change = ar_balance.diff().fillna(ar_balance.iloc[0] if len(ar_balance) > 0 else 0)
-    ap_change = ap_balance.diff().fillna(ap_balance.iloc[0] if len(ap_balance) > 0 else 0)
-    inventory_change = inventory_balance.diff().fillna(inventory_balance.iloc[0] if len(inventory_balance) > 0 else 0)
+    # Calculate target working capital balances for each period
+    target_ar_balance = revenue_total * (ar_days / days_in_period)
+    target_ap_balance = cogs * (ap_days / days_in_period)
+    target_inventory_balance = cogs * (inventory_days / days_in_period)
+    
+    # Initialize change series
+    ar_change = pd.Series([0.0] * periods, index=range(periods))
+    ap_change = pd.Series([0.0] * periods, index=range(periods))
+    inventory_change = pd.Series([0.0] * periods, index=range(periods))
+    
+    # Track ending balances for each period
+    ar_ending_balance = pd.Series([0.0] * periods, index=range(periods))
+    ap_ending_balance = pd.Series([0.0] * periods, index=range(periods))
+    inventory_ending_balance = pd.Series([0.0] * periods, index=range(periods))
+    
+    # Calculate changes period by period
+    for period in range(periods):
+        if period == 0:
+            # Period 0: Use starting balances
+            beginning_ar = starting_ar_balance
+            beginning_inventory = starting_inventory_balance
+            
+            # CRITICAL FIX: In startup/acquisition scenarios with no explicit starting AP,
+            # do not create phantom AP in Period 0
+            if is_startup_like and starting_ap_balance == 0:
+                beginning_ap = 0.0
+                # Force Period 0 AP change to zero (no phantom supplier credit)
+                ap_change.iloc[0] = 0.0
+                ap_ending_balance.iloc[0] = 0.0
+            else:
+                beginning_ap = starting_ap_balance
+                ap_change.iloc[0] = target_ap_balance.iloc[0] - beginning_ap
+                ap_ending_balance.iloc[0] = target_ap_balance.iloc[0]
+            
+            # AR and Inventory build normally from starting balances
+            ar_change.iloc[0] = target_ar_balance.iloc[0] - beginning_ar
+            inventory_change.iloc[0] = target_inventory_balance.iloc[0] - beginning_inventory
+            ar_ending_balance.iloc[0] = target_ar_balance.iloc[0]
+            inventory_ending_balance.iloc[0] = target_inventory_balance.iloc[0]
+        else:
+            # Period 1+: Use prior period ending balances
+            beginning_ar = ar_ending_balance.iloc[period - 1]
+            beginning_ap = ap_ending_balance.iloc[period - 1]
+            beginning_inventory = inventory_ending_balance.iloc[period - 1]
+            
+            ar_change.iloc[period] = target_ar_balance.iloc[period] - beginning_ar
+            ap_change.iloc[period] = target_ap_balance.iloc[period] - beginning_ap
+            inventory_change.iloc[period] = target_inventory_balance.iloc[period] - beginning_inventory
+            
+            ar_ending_balance.iloc[period] = target_ar_balance.iloc[period]
+            ap_ending_balance.iloc[period] = target_ap_balance.iloc[period]
+            inventory_ending_balance.iloc[period] = target_inventory_balance.iloc[period]
     
     # Calculate working capital requirement for Period 0
-    if len(ar_balance) > 0:
-        period_0_inventory = inventory_balance.iloc[0]
-        period_0_ar = ar_balance.iloc[0]
-        period_0_ap = ap_balance.iloc[0]
+    # Note: This uses ending balances, not changes
+    if len(target_ar_balance) > 0:
+        period_0_inventory = inventory_ending_balance.iloc[0]
+        period_0_ar = ar_ending_balance.iloc[0]
+        period_0_ap = ap_ending_balance.iloc[0]
         working_capital_requirement = calculate_working_capital_requirement(
             period_0_inventory, 
             period_0_ar, 
@@ -126,7 +182,19 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     # Ending cash balance
     ending_cash = net_cash_flow.cumsum()
     
-    return pd.DataFrame({
+    # Diagnostic metadata for troubleshooting
+    period_0_debug = {
+        'beginning_ar_balance': starting_ar_balance,
+        'beginning_ap_balance': starting_ap_balance if not (is_startup_like and starting_ap_balance == 0) else 0.0,
+        'beginning_inventory_balance': starting_inventory_balance,
+        'target_ar_balance': target_ar_balance.iloc[0] if len(target_ar_balance) > 0 else 0,
+        'target_ap_balance': target_ap_balance.iloc[0] if len(target_ap_balance) > 0 else 0,
+        'target_inventory_balance': target_inventory_balance.iloc[0] if len(target_inventory_balance) > 0 else 0,
+        'is_startup_like': is_startup_like,
+        'ap_change_period_0': ap_change.iloc[0] if len(ap_change) > 0 else 0,
+    }
+    
+    result_df = pd.DataFrame({
         'net_income': net_income,
         'ar_change': ar_change,
         'ap_change': ap_change,
@@ -138,6 +206,11 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
         'net_cash_flow': net_cash_flow,
         'ending_cash': ending_cash
     })
+    
+    # Attach debug metadata as attribute
+    result_df.attrs['period_0_debug'] = period_0_debug
+    
+    return result_df
 
 
 def build_pnl_statement(revenue_total, cogs, direct_payroll, indirect_payroll, opex_total, interest_expense, 
