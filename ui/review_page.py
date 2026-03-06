@@ -332,6 +332,12 @@ def render():
             if 'cash_flow_statement' in outputs and outputs['cash_flow_statement'] is not None:
                 cash_flow = outputs['cash_flow_statement'].copy()
                 
+                # Show capital stack funding indicator
+                capital_metrics = cash_flow.attrs.get('capital_metrics', {})
+                beginning_cash = capital_metrics.get('beginning_cash', 0)
+                if beginning_cash > 0:
+                    st.info(f"💰 **Beginning Cash funded from Capital Stack:** ${beginning_cash:,.0f}")
+                
                 # Transpose: line items as rows, periods as columns
                 cash_flow_transposed = cash_flow.T
                 

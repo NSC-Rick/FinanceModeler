@@ -117,6 +117,15 @@ def build_model(model_inputs):
         periods
     )
     
+    # Extract working capital funding from capital stack
+    working_capital_funding = 0.0
+    if model_inputs.get('capital_stack', {}).get('enabled', False):
+        working_capital_funding = (
+            model_inputs['capital_stack']
+            .get('uses', {})
+            .get('working_capital', 0.0)
+        )
+    
     cash_flow_statement = build_cash_flow_statement(
         pnl_statement['net_income'],
         loan_schedule['principal'],
@@ -132,7 +141,8 @@ def build_model(model_inputs):
         starting_ar_balance=model_inputs.get('starting_ar_balance', 0.0),
         starting_ap_balance=model_inputs.get('starting_ap_balance', 0.0),
         starting_inventory_balance=model_inputs.get('starting_inventory_balance', 0.0),
-        capital_stack_enabled=model_inputs.get('capital_stack', {}).get('enabled', False)
+        capital_stack_enabled=model_inputs.get('capital_stack', {}).get('enabled', False),
+        beginning_cash=working_capital_funding
     )
     
     kpis = calculate_kpis(

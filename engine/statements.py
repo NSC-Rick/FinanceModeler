@@ -58,12 +58,12 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
                                revenue_total, cogs, time_mode, owner_distribution=None, 
                                business_stage='acquisition', starting_ar_balance=0.0, 
                                starting_ap_balance=0.0, starting_inventory_balance=0.0,
-                               capital_stack_enabled=False):
+                               capital_stack_enabled=False, beginning_cash=0.0):
     """
     Build cash flow statement with working capital adjustments and owner distributions.
     
-    Automatically injects working capital in Period 0 to prevent negative startup cash.
     Prevents Period-0 AP double counting in startup/acquisition scenarios.
+    Beginning cash can be funded from capital stack working capital.
     
     Args:
         net_income: Series of net income per period
@@ -174,10 +174,8 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     # Net cash flow (financially pure - no artificial injections)
     net_cash_flow = operating_cash_flow + financing_cash_flow - owner_dist
     
-    # Beginning cash defaults to 0 (startup scenario)
-    beginning_cash = 0.0
-    
     # Ending cash balance: beginning cash + cumulative net cash flow
+    # beginning_cash comes from capital stack working capital (if enabled)
     ending_cash = beginning_cash + net_cash_flow.cumsum()
     
     # Calculate capital requirement metrics
@@ -214,6 +212,7 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     
     # Capital requirement metrics
     capital_metrics = {
+        'beginning_cash': beginning_cash,
         'lowest_cash_balance': lowest_cash_balance,
         'cash_injection_required': cash_injection_required,
         'lowest_cash_period': lowest_cash_period,
