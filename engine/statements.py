@@ -101,6 +101,44 @@ def calculate_opening_working_capital(
         }
 
 
+def calculate_required_working_capital(
+    revenue,
+    cogs,
+    ar_days,
+    ap_days,
+    inventory_days,
+    days_in_period=30
+):
+    """
+    Calculate required working capital based on operating assumptions.
+    
+    Args:
+        revenue: Revenue for the period
+        cogs: COGS for the period
+        ar_days: Days sales outstanding
+        ap_days: Days payable outstanding
+        inventory_days: Days inventory held
+        days_in_period: Days in period (default 30 for monthly)
+    
+    Returns:
+        Dictionary with AR, AP, Inventory balances and required working capital
+    """
+    ar_balance = revenue * (ar_days / days_in_period)
+    ap_balance = cogs * (ap_days / days_in_period)
+    inventory_balance = cogs * (inventory_days / days_in_period)
+    
+    # Required working capital = Current Assets - Current Liabilities
+    # = (AR + Inventory) - AP
+    required_wc = ar_balance + inventory_balance - ap_balance
+    
+    return {
+        'ar': ar_balance,
+        'ap': ap_balance,
+        'inventory': inventory_balance,
+        'required_wc': required_wc
+    }
+
+
 def build_income_statement(revenue_total, cogs, payroll_total, opex_total, interest_expense):
     """
     Build income statement.
@@ -139,13 +177,19 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
                                revenue_total, cogs, time_mode, owner_distribution=None, 
                                business_stage='acquisition', starting_ar_balance=0.0, 
                                starting_ap_balance=0.0, starting_inventory_balance=0.0,
-                               capital_stack_enabled=False, beginning_cash=0.0, model_mode='startup'):
+                               capital_stack_enabled=False, beginning_cash=0.0, model_mode='startup',
+                               working_capital_source='buyer_injected'):
     """
     Build cash flow statement with working capital adjustments and owner distributions.
     
     Model mode determines opening working capital initialization:
     - 'startup': Zero opening balances (default)
     - 'acquisition': Opening balances calculated from operating assumptions
+    
+    Working capital source determines how working capital is financed:
+    - 'buyer_injected': Buyer provides cash for working capital (default)
+    - 'seller_provided': Seller provides working capital balances (AR, AP, Inventory)
+    - 'loan_financed': Working capital funded by separate loan
     
     Prevents Period-0 AP double counting in startup/acquisition scenarios.
     Beginning cash can be funded from capital stack working capital.
@@ -179,17 +223,41 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     # Determine if this is a startup-like scenario
     is_startup_like = business_stage in ['startup', 'acquisition'] or capital_stack_enabled
     
-    # Calculate opening working capital balances based on model mode
-    # If explicit starting balances are provided, use those; otherwise use model_mode logic
+    # Calculate opening working capital balances based on working_capital_source and model_mode
+    # Priority: explicit starting balances > working_capital_source > model_mode
     if starting_ar_balance != 0.0 or starting_ap_balance != 0.0 or starting_inventory_balance != 0.0:
-        # Explicit starting balances provided (legacy behavior)
+        # Explicit starting balances provided (legacy behavior - highest priority)
         opening_wc = {
             'ar': starting_ar_balance,
             'ap': starting_ap_balance,
             'inventory': starting_inventory_balance
         }
+    elif working_capital_source == 'seller_provided':
+        # Seller provides working capital balances (AR, AP, Inventory)
+        # Calculate required working capital from operating assumptions
+        required_wc = calculate_required_working_capital(
+            revenue=revenue_total.iloc[0] if len(revenue_total) > 0 else 0.0,
+            cogs=cogs.iloc[0] if len(cogs) > 0 else 0.0,
+            ar_days=ar_days,
+            ap_days=ap_days,
+            inventory_days=inventory_days,
+            days_in_period=days_in_period
+        )
+        opening_wc = {
+            'ar': required_wc['ar'],
+            'ap': required_wc['ap'],
+            'inventory': required_wc['inventory']
+        }
+    elif working_capital_source in ['buyer_injected', 'loan_financed']:
+        # Buyer injects cash or loan finances working capital
+        # Opening balances are zero (cash is provided instead)
+        opening_wc = {
+            'ar': 0.0,
+            'ap': 0.0,
+            'inventory': 0.0
+        }
     else:
-        # Use model_mode to determine opening balances
+        # Fallback to model_mode logic
         opening_wc = calculate_opening_working_capital(
             model_mode=model_mode,
             revenue_period_0=revenue_total.iloc[0] if len(revenue_total) > 0 else 0.0,
@@ -319,6 +387,23 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
         'working_capital_requirement': working_capital_requirement,
     }
     
+    # Calculate required working capital for Period 0
+    required_wc_calc = calculate_required_working_capital(
+        revenue=revenue_total.iloc[0] if len(revenue_total) > 0 else 0.0,
+        cogs=cogs.iloc[0] if len(cogs) > 0 else 0.0,
+        ar_days=ar_days,
+        ap_days=ap_days,
+        inventory_days=inventory_days,
+        days_in_period=days_in_period
+    )
+    
+    # Calculate working capital coverage ratio
+    # Coverage = Beginning Cash / Required Working Capital
+    if required_wc_calc['required_wc'] > 0:
+        working_capital_coverage = beginning_cash / required_wc_calc['required_wc']
+    else:
+        working_capital_coverage = None  # N/A when required WC is negative or zero
+    
     # Capital requirement metrics
     capital_metrics = {
         'beginning_cash': beginning_cash,
@@ -328,6 +413,12 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
         'recommended_starting_cash': recommended_starting_cash,
         'break_even_period': break_even_period,
         'cash_runway_periods': cash_runway_periods,
+        'required_working_capital': required_wc_calc['required_wc'],
+        'required_wc_ar': required_wc_calc['ar'],
+        'required_wc_ap': required_wc_calc['ap'],
+        'required_wc_inventory': required_wc_calc['inventory'],
+        'working_capital_coverage': working_capital_coverage,
+        'working_capital_source': working_capital_source,
     }
     
     result_df = pd.DataFrame({

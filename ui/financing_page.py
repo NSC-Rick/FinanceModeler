@@ -71,6 +71,35 @@ def render():
         else:
             st.info("🏢 **Acquisition Mode:** Opening AR, AP, and Inventory balances are calculated from your operating assumptions (AR days, AP days, Inventory days). This prevents artificial spikes in Period 1.")
         
+        st.divider()
+        
+        # Working Capital Source Toggle
+        st.markdown("### 💰 Working Capital Financing")
+        
+        wc_source_display = st.radio(
+            "Working Capital Source",
+            ["Buyer Injected", "Seller Provided", "Loan Financed"],
+            index=["buyer_injected", "seller_provided", "loan_financed"].index(st.session_state.get('working_capital_source', 'buyer_injected')),
+            horizontal=True,
+            help="Determines how working capital is financed at closing"
+        )
+        
+        # Map display value to internal value
+        wc_source_mapping = {
+            "Buyer Injected": "buyer_injected",
+            "Seller Provided": "seller_provided",
+            "Loan Financed": "loan_financed"
+        }
+        st.session_state.working_capital_source = wc_source_mapping[wc_source_display]
+        
+        # Show explanation based on working capital source
+        if st.session_state.working_capital_source == 'buyer_injected':
+            st.info("💵 **Buyer Injected:** Buyer provides cash for working capital. Opening AR, AP, and Inventory are zero. Cash is used to fund operations.")
+        elif st.session_state.working_capital_source == 'seller_provided':
+            st.info("🤝 **Seller Provided:** Seller transfers working capital balances (AR, AP, Inventory) at closing. No additional cash needed for working capital.")
+        else:
+            st.info("🏦 **Loan Financed:** Working capital funded by separate loan. Opening balances are zero. Loan proceeds provide cash for operations.")
+        
         # Advanced Starting Balances (Optional)
         with st.expander("⚙️ Advanced Starting Balances (Optional)", expanded=False):
             st.markdown("""

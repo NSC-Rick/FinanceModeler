@@ -54,7 +54,8 @@ def render():
         'starting_ar_balance': st.session_state.starting_ar_balance,
         'starting_ap_balance': st.session_state.starting_ap_balance,
         'starting_inventory_balance': st.session_state.starting_inventory_balance,
-        'model_mode': st.session_state.get('model_mode', 'startup')
+        'model_mode': st.session_state.get('model_mode', 'startup'),
+        'working_capital_source': st.session_state.get('working_capital_source', 'buyer_injected')
     }
     
     try:
@@ -415,6 +416,87 @@ def render():
                     - **Recommended Starting Cash:** Includes a 10% safety buffer for practical planning
                     - **Break-Even Period:** First period where the business becomes cash positive
                     """)
+                    
+                    # Required Working Capital Panel
+                    st.divider()
+                    st.subheader("📊 Required Working Capital Analysis")
+                    
+                    required_wc = capital_metrics.get('required_working_capital', 0)
+                    required_wc_ar = capital_metrics.get('required_wc_ar', 0)
+                    required_wc_ap = capital_metrics.get('required_wc_ap', 0)
+                    required_wc_inventory = capital_metrics.get('required_wc_inventory', 0)
+                    wc_coverage = capital_metrics.get('working_capital_coverage', None)
+                    wc_source = capital_metrics.get('working_capital_source', 'buyer_injected')
+                    beginning_cash = capital_metrics.get('beginning_cash', 0)
+                    
+                    # Display working capital source
+                    wc_source_display = {
+                        'buyer_injected': '💵 Buyer Injected',
+                        'seller_provided': '🤝 Seller Provided',
+                        'loan_financed': '🏦 Loan Financed'
+                    }.get(wc_source, wc_source)
+                    
+                    st.info(f"**Working Capital Source:** {wc_source_display}")
+                    
+                    # Required working capital breakdown
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.markdown("**Required Working Capital Components:**")
+                        wc_components_df = pd.DataFrame({
+                            "Component": [
+                                "Accounts Receivable",
+                                "Inventory",
+                                "Accounts Payable",
+                                "Net Working Capital"
+                            ],
+                            "Amount": [
+                                f"${required_wc_ar:,.0f}",
+                                f"${required_wc_inventory:,.0f}",
+                                f"-${required_wc_ap:,.0f}",
+                                f"${required_wc:,.0f}"
+                            ]
+                        })
+                        st.table(wc_components_df)
+                    
+                    with col2:
+                        st.markdown("**Working Capital Coverage:**")
+                        
+                        if wc_coverage is not None and required_wc > 0:
+                            # Coverage ratio interpretation
+                            if wc_coverage < 1.0:
+                                coverage_status = "⚠️ Undercapitalized"
+                                coverage_color = "warning"
+                            elif wc_coverage < 1.5:
+                                coverage_status = "✅ Adequate"
+                                coverage_color = "success"
+                            else:
+                                coverage_status = "💪 Strong Liquidity"
+                                coverage_color = "success"
+                            
+                            st.metric(
+                                label="Coverage Ratio",
+                                value=f"{wc_coverage:.2f}x",
+                                help="Beginning Cash / Required Working Capital"
+                            )
+                            
+                            if coverage_color == "warning":
+                                st.warning(f"{coverage_status}")
+                            else:
+                                st.success(f"{coverage_status}")
+                            
+                            st.caption(f"""
+                            **Beginning Cash:** ${beginning_cash:,.0f}  
+                            **Required WC:** ${required_wc:,.0f}  
+                            **Coverage:** {wc_coverage:.2f}x
+                            
+                            **Interpretation:**
+                            - < 1.0x: Undercapitalized
+                            - 1.0-1.5x: Adequate
+                            - > 1.5x: Strong liquidity
+                            """)
+                        else:
+                            st.info("Coverage ratio not applicable (negative or zero required WC)")
                 else:
                     st.info("💡 Capital requirement metrics not available.")
             else:

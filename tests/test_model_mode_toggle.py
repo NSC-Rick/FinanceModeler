@@ -179,7 +179,8 @@ def test_acquisition_mode_minimal_period_1_change():
         starting_inventory_balance=0.0,
         capital_stack_enabled=False,
         beginning_cash=0.0,
-        model_mode='acquisition'
+        model_mode='acquisition',
+        working_capital_source='seller_provided'  # Use seller_provided to get acquisition-like behavior
     )
     
     # In acquisition mode, Period 0 should have small changes
@@ -254,7 +255,8 @@ def test_startup_vs_acquisition_comparison():
         starting_inventory_balance=0.0,
         capital_stack_enabled=False,
         beginning_cash=0.0,
-        model_mode='acquisition'
+        model_mode='acquisition',
+        working_capital_source='seller_provided'  # Use seller_provided to get acquisition-like behavior
     )
     
     # Compare Period 0 working capital changes

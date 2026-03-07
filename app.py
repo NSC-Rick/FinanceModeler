@@ -1,5 +1,5 @@
 import streamlit as st
-from ui import home, revenue_page, payroll_page, opex_page, financing_page, review_page, insights_page, modeler_page
+from ui import home, revenue_page, payroll_page, opex_page, financing_page, review_page, insights_page, modeler_page, optimizer_page
 from config.version import PLATFORM_VERSION, BUILD_DATE
 
 
@@ -20,7 +20,8 @@ pages = {
     "🏦 Financing": financing_page,
     "📊 Review": review_page,
     "💡 Insights": insights_page,
-    "🎯 Modeler": modeler_page
+    "🎯 Modeler": modeler_page,
+    "🎯 Deal Optimizer": optimizer_page
 }
 
 selection = st.sidebar.radio("Go to", list(pages.keys()))

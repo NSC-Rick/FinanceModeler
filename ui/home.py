@@ -156,6 +156,9 @@ def initialize_session_state():
     if 'model_mode' not in st.session_state:
         st.session_state.model_mode = 'startup'
     
+    if 'working_capital_source' not in st.session_state:
+        st.session_state.working_capital_source = 'buyer_injected'
+    
     if 'starting_ar_balance' not in st.session_state:
         st.session_state.starting_ar_balance = 0.0
     
