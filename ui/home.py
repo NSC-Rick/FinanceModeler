@@ -153,6 +153,9 @@ def initialize_session_state():
     if 'business_stage' not in st.session_state:
         st.session_state.business_stage = 'acquisition'
     
+    if 'model_mode' not in st.session_state:
+        st.session_state.model_mode = 'startup'
+    
     if 'starting_ar_balance' not in st.session_state:
         st.session_state.starting_ar_balance = 0.0
     

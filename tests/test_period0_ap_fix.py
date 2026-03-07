@@ -42,13 +42,14 @@ def test_startup_acquisition_no_phantom_ap():
         starting_ar_balance=0.0,
         starting_ap_balance=0.0,
         starting_inventory_balance=0.0,
-        capital_stack_enabled=True
+        capital_stack_enabled=True,
+        model_mode='startup'  # Use startup mode to ensure zero opening AP
     )
     
     # Assertions
-    # Period 0 AP change should be ZERO (no phantom supplier credit)
+    # Period 0 AP change should be ZERO (no phantom supplier credit in startup mode)
     assert cash_flow['ap_change'].iloc[0] == 0.0, \
-        f"Period 0 AP change should be 0, got {cash_flow['ap_change'].iloc[0]}"
+        f"Period 0 AP change should be 0 in startup mode, got {cash_flow['ap_change'].iloc[0]}"
     
     # Period 0 AR change should be positive (increase in AR = cash outflow)
     # Note: In OCF calculation, we subtract AR change, so positive AR change reduces cash
@@ -152,12 +153,13 @@ def test_period_1_onward_ap_builds_normally():
         starting_ar_balance=0.0,
         starting_ap_balance=0.0,
         starting_inventory_balance=0.0,
-        capital_stack_enabled=False
+        capital_stack_enabled=False,
+        model_mode='startup'  # Use startup mode to ensure zero opening AP
     )
     
     # Assertions
-    # Period 0 AP change should be 0
-    assert cash_flow['ap_change'].iloc[0] == 0.0, "Period 0 AP change should be 0"
+    # Period 0 AP change should be 0 in startup mode
+    assert cash_flow['ap_change'].iloc[0] == 0.0, "Period 0 AP change should be 0 in startup mode"
     
     # Period 1 AP change should be positive (building AP from 0 to target)
     target_ap_period_1 = 20000.0  # cogs * (ap_days / 30)
@@ -259,13 +261,14 @@ def test_working_capital_requirement_calculation():
         starting_ar_balance=0.0,
         starting_ap_balance=0.0,
         starting_inventory_balance=0.0,
-        capital_stack_enabled=False
+        capital_stack_enabled=False,
+        model_mode='startup'  # Use startup mode to ensure zero opening AP
     )
     
     # Calculate expected WC requirement
     # AR = 50000 * (30/30) = 50000
     # Inventory = 20000 * (45/30) = 30000
-    # AP = 0 (forced to zero in Period 0)
+    # AP = 0 (forced to zero in startup mode Period 0)
     # WC = 50000 + 30000 - 0 = 80000
     
     expected_wc = 80000.0

@@ -50,6 +50,57 @@ def calculate_working_capital_requirement(inventory, ar, ap):
     return inventory + ar - ap
 
 
+def calculate_opening_working_capital(
+    model_mode,
+    revenue_period_0,
+    cogs_period_0,
+    ar_days,
+    ap_days,
+    inventory_days,
+    days_in_period=30
+):
+    """
+    Calculate opening working capital balances based on model mode.
+    
+    Args:
+        model_mode: 'startup' or 'acquisition'
+        revenue_period_0: Revenue for period 0
+        cogs_period_0: COGS for period 0
+        ar_days: Days sales outstanding
+        ap_days: Days payable outstanding
+        inventory_days: Days inventory held
+        days_in_period: Days in period (default 30 for monthly)
+    
+    Returns:
+        Dictionary with opening AR, AP, and Inventory balances
+    """
+    if model_mode == 'startup':
+        # Startup mode: Zero opening balances
+        return {
+            'ar': 0.0,
+            'ap': 0.0,
+            'inventory': 0.0
+        }
+    elif model_mode == 'acquisition':
+        # Acquisition mode: Calculate from operating assumptions
+        opening_ar = revenue_period_0 * (ar_days / days_in_period)
+        opening_ap = cogs_period_0 * (ap_days / days_in_period)
+        opening_inventory = cogs_period_0 * (inventory_days / days_in_period)
+        
+        return {
+            'ar': opening_ar,
+            'ap': opening_ap,
+            'inventory': opening_inventory
+        }
+    else:
+        # Default to startup mode for unknown values
+        return {
+            'ar': 0.0,
+            'ap': 0.0,
+            'inventory': 0.0
+        }
+
+
 def build_income_statement(revenue_total, cogs, payroll_total, opex_total, interest_expense):
     """
     Build income statement.
@@ -88,9 +139,13 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
                                revenue_total, cogs, time_mode, owner_distribution=None, 
                                business_stage='acquisition', starting_ar_balance=0.0, 
                                starting_ap_balance=0.0, starting_inventory_balance=0.0,
-                               capital_stack_enabled=False, beginning_cash=0.0):
+                               capital_stack_enabled=False, beginning_cash=0.0, model_mode='startup'):
     """
     Build cash flow statement with working capital adjustments and owner distributions.
+    
+    Model mode determines opening working capital initialization:
+    - 'startup': Zero opening balances (default)
+    - 'acquisition': Opening balances calculated from operating assumptions
     
     Prevents Period-0 AP double counting in startup/acquisition scenarios.
     Beginning cash can be funded from capital stack working capital.
@@ -111,6 +166,8 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
         starting_ap_balance: Explicit starting AP balance (default 0.0)
         starting_inventory_balance: Explicit starting inventory balance (default 0.0)
         capital_stack_enabled: Whether capital stack funding is enabled
+        beginning_cash: Beginning cash balance (from capital stack)
+        model_mode: 'startup' or 'acquisition' (default 'startup')
     
     Returns:
         DataFrame with cash flow statement including working_capital_injection row
@@ -121,6 +178,27 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     
     # Determine if this is a startup-like scenario
     is_startup_like = business_stage in ['startup', 'acquisition'] or capital_stack_enabled
+    
+    # Calculate opening working capital balances based on model mode
+    # If explicit starting balances are provided, use those; otherwise use model_mode logic
+    if starting_ar_balance != 0.0 or starting_ap_balance != 0.0 or starting_inventory_balance != 0.0:
+        # Explicit starting balances provided (legacy behavior)
+        opening_wc = {
+            'ar': starting_ar_balance,
+            'ap': starting_ap_balance,
+            'inventory': starting_inventory_balance
+        }
+    else:
+        # Use model_mode to determine opening balances
+        opening_wc = calculate_opening_working_capital(
+            model_mode=model_mode,
+            revenue_period_0=revenue_total.iloc[0] if len(revenue_total) > 0 else 0.0,
+            cogs_period_0=cogs.iloc[0] if len(cogs) > 0 else 0.0,
+            ar_days=ar_days,
+            ap_days=ap_days,
+            inventory_days=inventory_days,
+            days_in_period=days_in_period
+        )
     
     # Calculate target working capital balances for each period
     target_ar_balance = revenue_total * (ar_days / days_in_period)
@@ -140,25 +218,26 @@ def build_cash_flow_statement(net_income, loan_principal, loan_payment, ar_days,
     # Calculate changes period by period
     for period in range(periods):
         if period == 0:
-            # Period 0: Use starting balances
-            beginning_ar = starting_ar_balance
-            beginning_inventory = starting_inventory_balance
+            # Period 0: Use opening balances from model_mode
+            beginning_ar = opening_wc['ar']
+            beginning_ap = opening_wc['ap']
+            beginning_inventory = opening_wc['inventory']
             
-            # CRITICAL FIX: In startup/acquisition scenarios with no explicit starting AP,
-            # do not create phantom AP in Period 0
-            if is_startup_like and starting_ap_balance == 0:
-                beginning_ap = 0.0
-                # Force Period 0 AP change to zero (no phantom supplier credit)
+            # CRITICAL: In startup mode, force AP to zero in Period 0 to prevent phantom supplier credit
+            if model_mode == 'startup' and beginning_ap == 0.0:
+                # Startup mode: No AP in Period 0
                 ap_change.iloc[0] = 0.0
                 ap_ending_balance.iloc[0] = 0.0
             else:
-                beginning_ap = starting_ap_balance
+                # Acquisition mode or explicit starting balances: Calculate normally
                 ap_change.iloc[0] = target_ap_balance.iloc[0] - beginning_ap
                 ap_ending_balance.iloc[0] = target_ap_balance.iloc[0]
             
-            # AR and Inventory build normally from starting balances
+            # AR and Inventory build normally from opening balances
             ar_change.iloc[0] = target_ar_balance.iloc[0] - beginning_ar
             inventory_change.iloc[0] = target_inventory_balance.iloc[0] - beginning_inventory
+            
+            # Set ending balances
             ar_ending_balance.iloc[0] = target_ar_balance.iloc[0]
             inventory_ending_balance.iloc[0] = target_inventory_balance.iloc[0]
         else:

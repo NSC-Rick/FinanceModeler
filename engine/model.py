@@ -142,7 +142,8 @@ def build_model(model_inputs):
         starting_ap_balance=model_inputs.get('starting_ap_balance', 0.0),
         starting_inventory_balance=model_inputs.get('starting_inventory_balance', 0.0),
         capital_stack_enabled=model_inputs.get('capital_stack', {}).get('enabled', False),
-        beginning_cash=working_capital_funding
+        beginning_cash=working_capital_funding,
+        model_mode=model_inputs.get('model_mode', 'startup')
     )
     
     kpis = calculate_kpis(

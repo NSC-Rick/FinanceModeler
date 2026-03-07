@@ -49,6 +49,28 @@ def render():
         else:
             st.info("ℹ️ **Existing Business mode:** Period 0 working capital changes calculated from starting balances entered below.")
         
+        st.divider()
+        
+        # Model Mode Toggle (determines opening working capital initialization)
+        st.markdown("### 📊 Working Capital Initialization")
+        
+        model_mode_display = st.radio(
+            "Business Scenario",
+            ["Startup", "Acquisition"],
+            index=0 if st.session_state.get('model_mode', 'startup') == 'startup' else 1,
+            horizontal=True,
+            help="Determines how opening working capital balances (AR, AP, Inventory) are initialized"
+        )
+        
+        # Map display value to internal value
+        st.session_state.model_mode = model_mode_display.lower()
+        
+        # Show explanation based on model mode
+        if st.session_state.model_mode == 'startup':
+            st.info("🚀 **Startup Mode:** Opening AR, AP, and Inventory balances are zero. Working capital builds from Period 0 operations.")
+        else:
+            st.info("🏢 **Acquisition Mode:** Opening AR, AP, and Inventory balances are calculated from your operating assumptions (AR days, AP days, Inventory days). This prevents artificial spikes in Period 1.")
+        
         # Advanced Starting Balances (Optional)
         with st.expander("⚙️ Advanced Starting Balances (Optional)", expanded=False):
             st.markdown("""

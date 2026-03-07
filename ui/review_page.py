@@ -53,7 +53,8 @@ def render():
         'business_stage': st.session_state.business_stage,
         'starting_ar_balance': st.session_state.starting_ar_balance,
         'starting_ap_balance': st.session_state.starting_ap_balance,
-        'starting_inventory_balance': st.session_state.starting_inventory_balance
+        'starting_inventory_balance': st.session_state.starting_inventory_balance,
+        'model_mode': st.session_state.get('model_mode', 'startup')
     }
     
     try:
@@ -331,6 +332,13 @@ def render():
             # Defensive handling for missing cash_flow_statement
             if 'cash_flow_statement' in outputs and outputs['cash_flow_statement'] is not None:
                 cash_flow = outputs['cash_flow_statement'].copy()
+                
+                # Show model mode banner
+                model_mode = model_inputs.get('model_mode', 'startup')
+                if model_mode == 'startup':
+                    st.info("🚀 **Startup Mode** — No opening working capital balances assumed. AR, AP, and Inventory build from Period 0 operations.")
+                else:
+                    st.info("🏢 **Acquisition Mode** — Opening AR/AP/Inventory initialized from operating assumptions. This prevents artificial spikes in Period 1.")
                 
                 # Show capital stack funding indicator
                 capital_metrics = cash_flow.attrs.get('capital_metrics', {})
