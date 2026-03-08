@@ -10,6 +10,31 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
+def initialize_session_state():
+    """
+    Global session state initialization (WPP-SESSION-INIT-001).
+    Ensures core session state variables are initialized before page routing.
+    """
+    defaults = {
+        "revenue_streams": [],
+        "payroll_roles": [],
+        "opex_categories": [],
+        "financing_sources": [],
+        "model_inputs": {},
+        "forecast_periods": 36,
+        "purchase_price": 0.0,
+        "scenario_name": "Business Scenario"
+    }
+
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
+
+# Initialize session state before page routing
+initialize_session_state()
+
 st.sidebar.title("Operating Model")
 
 pages = {

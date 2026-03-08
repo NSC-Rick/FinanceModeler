@@ -17,10 +17,35 @@ except ImportError:
     OPENPYXL_AVAILABLE = False
 
 
-def sanitize_excel_columns(df):
+def sanitize_excel_column_name(name: str) -> str:
     """
-    Ensure all DataFrame column names are Excel-safe strings.
-    Removes problematic characters and converts non-string labels.
+    Cleans dataframe column names so they are valid for Excel.
+    
+    Excel column names cannot contain: \\ / * ? : [ ]
+    
+    Args:
+        name: Column name to sanitize
+    
+    Returns:
+        Sanitized column name safe for Excel
+    """
+    name = str(name)
+    
+    # Replace bracket style references FIRST (before removing them)
+    name = name.replace("[", "(").replace("]", ")")
+    
+    # Replace curly braces
+    name = name.replace("{", "").replace("}", "")
+    
+    # Remove remaining characters Excel dislikes (but not parentheses)
+    name = re.sub(r'[\\/*?:]', '', name)
+    
+    return name
+
+
+def sanitize_dataframe_for_excel(df):
+    """
+    Ensures dataframe column names are safe for Excel export.
     
     Args:
         df: DataFrame with potentially invalid column names
@@ -28,14 +53,8 @@ def sanitize_excel_columns(df):
     Returns:
         DataFrame with sanitized column names
     """
-    df.columns = [
-        str(col)
-        .replace("[", "")
-        .replace("]", "")
-        .replace("{", "")
-        .replace("}", "")
-        for col in df.columns
-    ]
+    df = df.copy()
+    df.columns = [sanitize_excel_column_name(c) for c in df.columns]
     return df
 
 
@@ -51,10 +70,20 @@ def sanitize_sheet_name(name: str) -> str:
     Returns:
         Sanitized sheet name safe for Excel
     """
+    name = str(name)
+    
     # Remove invalid characters
-    name = re.sub(r'[\[\]\*\?\/\\:]', '', name)
+    name = re.sub(r'[\\/*?:\[\]]', '', name)
+    
     # Truncate to Excel's 31 character limit
-    return name[:31]
+    if len(name) > 31:
+        name = name[:31]
+    
+    # Handle empty string case
+    if name.strip() == "":
+        name = "Sheet"
+    
+    return name
 
 
 def safe_to_excel(df, writer, sheet_name, index=True, **kwargs):
@@ -63,13 +92,18 @@ def safe_to_excel(df, writer, sheet_name, index=True, **kwargs):
     This wrapper automatically sanitizes column names and sheet names to prevent ValueError.
     
     Args:
-        df: DataFrame to write
+        df: DataFrame to write (or dict to convert to DataFrame)
         writer: ExcelWriter object
         sheet_name: Name of the sheet
         index: Whether to write row index (default True)
         **kwargs: Additional arguments passed to df.to_excel()
     """
-    df = sanitize_excel_columns(df)
+    # Guard for JSON payload - convert dict to DataFrame
+    if isinstance(df, dict):
+        df = pd.DataFrame([df])
+    
+    # Sanitize dataframe columns and sheet name
+    df = sanitize_dataframe_for_excel(df)
     safe_name = sanitize_sheet_name(sheet_name)
     df.to_excel(writer, sheet_name=safe_name, index=index, **kwargs)
 
