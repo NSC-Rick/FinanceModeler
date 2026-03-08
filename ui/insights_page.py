@@ -59,17 +59,22 @@ def render():
         first_period_kpis = kpis.iloc[0]
         gross_margin_pct = first_period_kpis.get('gross_margin_pct', 0) / 100  # Convert to decimal
         
-        # Revenue for ratio calculations
-        revenue = income_statement['revenue'].iloc[0]
+        # Revenue for ratio calculations (annual)
+        time_mode = model_inputs.get('time_mode', 'monthly')
+        if time_mode == 'monthly':
+            annual_revenue = income_statement['revenue'].iloc[:12].sum()
+        else:
+            annual_revenue = income_statement['revenue'].iloc[0]
         
-        # Rent calculation (find rent in opex_items)
-        rent_amount = 0
+        # Rent calculation (find rent in opex_items and annualize)
+        monthly_rent = 0
         for item in model_inputs.get('opex_items', []):
             if item.get('name', '').lower() == 'rent':
-                rent_amount = item.get('amount', 0)
+                monthly_rent = item.get('amount', 0)
                 break
         
-        rent_to_revenue_ratio = rent_amount / revenue if revenue > 0 else 0
+        annual_rent = monthly_rent * 12
+        rent_to_revenue_ratio = annual_rent / annual_revenue if annual_revenue > 0 else 0
         
         # Advanced mode checks
         mode = model_inputs.get('mode', 'Basic')
@@ -77,27 +82,50 @@ def render():
         
         # Funding gap (Advanced only)
         funding_gap = 0
+        total_uses = 0
+        total_sources = 0
         if is_advanced:
             capital_stack = model_inputs.get('capital_stack', {})
             if capital_stack.get('enabled', False):
                 uses = capital_stack.get('uses', {})
                 sources = capital_stack.get('sources', {})
                 
-                total_uses = sum([
-                    uses.get('purchase_price', 0),
-                    uses.get('inventory_adjustment', 0),
-                    uses.get('closing_costs', 0),
-                    uses.get('working_capital', 0),
-                    uses.get('capex', 0)
-                ])
+                # Fix double counting: use purchase_price OR business_purchase_price, not both
+                purchase_price = uses.get('purchase_price', 0)
+                if purchase_price > 0:
+                    total_uses += purchase_price
+                else:
+                    total_uses += uses.get('business_purchase_price', 0)
                 
-                total_sources = sum([
-                    sources.get('buyer_equity', 0),
-                    sources.get('community_equity', 0),
-                    sources.get('donations', 0),
-                    sources.get('bank_loan', {}).get('amount', 0),
-                    sources.get('seller_note', {}).get('amount', 0)
-                ])
+                # Add other uses
+                total_uses += uses.get('inventory_adjustment', 0)
+                total_uses += uses.get('working_capital', 0)
+                total_uses += uses.get('capex', 0)
+                total_uses += uses.get('closing_costs', 0)
+                total_uses += uses.get('business_closing_costs', 0)
+                total_uses += uses.get('real_estate_purchase', 0)
+                total_uses += uses.get('real_estate_closing_costs', 0)
+                
+                # Calculate sources
+                total_sources = (
+                    sources.get('buyer_equity', 0)
+                    + sources.get('community_equity', 0)
+                    + sources.get('donations', 0)
+                )
+                
+                if 'bank_loan' in sources:
+                    bank_loan = sources['bank_loan']
+                    if isinstance(bank_loan, dict):
+                        total_sources += bank_loan.get('amount', 0)
+                    else:
+                        total_sources += bank_loan
+                
+                if 'seller_note' in sources:
+                    seller_note = sources['seller_note']
+                    if isinstance(seller_note, dict):
+                        total_sources += seller_note.get('amount', 0)
+                    else:
+                        total_sources += seller_note
                 
                 funding_gap = total_sources - total_uses
         
@@ -106,25 +134,16 @@ def render():
         
         # Equity injection ratio (Advanced only)
         equity_ratio = 0
-        if is_advanced:
+        if is_advanced and total_uses > 0:
             capital_stack = model_inputs.get('capital_stack', {})
             if capital_stack.get('enabled', False):
-                uses = capital_stack.get('uses', {})
                 sources = capital_stack.get('sources', {})
                 
-                total_uses = sum([
-                    uses.get('purchase_price', 0),
-                    uses.get('inventory_adjustment', 0),
-                    uses.get('closing_costs', 0),
-                    uses.get('working_capital', 0),
-                    uses.get('capex', 0)
-                ])
-                
-                total_equity = sum([
-                    sources.get('buyer_equity', 0),
-                    sources.get('community_equity', 0),
-                    sources.get('donations', 0)
-                ])
+                total_equity = (
+                    sources.get('buyer_equity', 0)
+                    + sources.get('community_equity', 0)
+                    + sources.get('donations', 0)
+                )
                 
                 equity_ratio = total_equity / total_uses if total_uses > 0 else 0
         
@@ -145,12 +164,12 @@ def render():
         if operating_cash_flow < 0:
             red_flags.append(f"Negative operating cash flow (${operating_cash_flow:,.2f}). Operations are consuming cash.")
         
-        # Rule: Advanced mode AND funding gap != 0
-        if is_advanced and funding_gap != 0:
-            if funding_gap > 0:
-                red_flags.append(f"Capital stack funding surplus (${funding_gap:,.2f}). Sources exceed uses.")
-            else:
-                red_flags.append(f"Capital stack funding shortfall (${abs(funding_gap):,.2f}). Uses exceed sources.")
+        # Rule: Advanced mode AND funding gap != 0 (with tolerance)
+        if is_advanced and abs(funding_gap) > 1000:
+            if funding_gap > 1000:
+                red_flags.append(f"Capital stack funding surplus (${funding_gap:,.0f}). Sources exceed uses.")
+            elif funding_gap < -1000:
+                red_flags.append(f"Capital stack funding gap (${abs(funding_gap):,.0f}). Additional capital required.")
         
         # ========================================
         # YELLOW FLAGS
@@ -227,6 +246,22 @@ def render():
                 st.success(f"🟢 {signal}")
         else:
             st.info("ℹ️ No green signals detected.")
+        
+        st.divider()
+        
+        # Debug Output (WPP-INSIGHTS-FLAGS-002)
+        with st.expander("🔍 Debug Data (WPP-INSIGHTS-FLAGS-002)"):
+            st.markdown("**Rent Ratio Calculation:**")
+            st.write(f"- Annual Revenue: ${annual_revenue:,.2f}")
+            st.write(f"- Monthly Rent: ${monthly_rent:,.2f}")
+            st.write(f"- Annual Rent: ${annual_rent:,.2f}")
+            st.write(f"- Rent Ratio: {rent_to_revenue_ratio*100:.2f}%")
+            
+            if is_advanced:
+                st.markdown("**Capital Stack Calculation:**")
+                st.write(f"- Total Uses: ${total_uses:,.2f}")
+                st.write(f"- Total Sources: ${total_sources:,.2f}")
+                st.write(f"- Funding Gap: ${funding_gap:,.2f}")
         
         st.divider()
         
