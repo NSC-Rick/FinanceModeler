@@ -7,6 +7,7 @@ Uses ONLY pre-computed summary metrics from Review page.
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 
 def render():
@@ -18,12 +19,16 @@ def render():
     st.subheader("Welcome to the Business Modeler")
     
     st.caption(
-        "A short overview explaining how the model works and how to interpret the results."
+        "A quick overview explaining how the model works and how to interpret the results."
     )
     
     with st.expander("🎬 Watch the 2-minute Modeler introduction", expanded=False):
-        st.video(
-            "https://drive.google.com/uc?export=view&id=1-HBZbPMn7jBdKJ73A6GXUXNQdYrAW84e"
+        video_url = "https://drive.google.com/file/d/1-HBZbPMn7jBdKJ73A6GXUXNQdYrAW84e/preview"
+        
+        components.iframe(
+            video_url,
+            height=420,
+            scrolling=False
         )
     
     st.markdown("---")
