@@ -13,6 +13,21 @@ def render():
     """Render the modeler page with simulation controls."""
     st.title("🎯 Modeler")
     
+    st.markdown("---")
+    
+    st.subheader("Welcome to the Business Modeler")
+    
+    st.caption(
+        "A short overview explaining how the model works and how to interpret the results."
+    )
+    
+    with st.expander("🎬 Watch the 2-minute Modeler introduction", expanded=False):
+        st.video(
+            "https://drive.google.com/uc?export=view&id=1-HBZbPMn7jBdKJ73A6GXUXNQdYrAW84e"
+        )
+    
+    st.markdown("---")
+    
     st.markdown("""
     Simulate revenue and expense adjustments without modifying your base model.
     All changes are temporary and reset when you reload the page.

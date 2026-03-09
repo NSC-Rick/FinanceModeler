@@ -153,24 +153,24 @@ def show_optimizer_page():
     st.divider()
     
     if st.button("🚀 Run Deal Optimization", type="primary", use_container_width=True):
-        # Build base model inputs from session state
+        # Build base model inputs from session state (WPP-SESSION-INIT-002: safer access)
         base_model_inputs = {
-            'revenue_streams': st.session_state.revenue_streams,
-            'payroll_roles': st.session_state.payroll_roles,
-            'opex_categories': st.session_state.opex_categories,
+            'revenue_streams': st.session_state.get('revenue_streams', []),
+            'payroll_roles': st.session_state.get('payroll_roles', []),
+            'opex_categories': st.session_state.get('opex_categories', []),
             'loan_amount': 0,  # Will be set by optimizer
-            'loan_rate': st.session_state.loan_rate,
-            'loan_term': st.session_state.loan_term,
-            'ar_days': st.session_state.ar_days,
-            'ap_days': st.session_state.ap_days,
-            'inventory_days': st.session_state.inventory_days,
-            'tax_rate': st.session_state.tax_rate,
-            'annual_depreciation': st.session_state.annual_depreciation,
-            'owner_compensation': st.session_state.owner_compensation,
-            'mode': st.session_state.mode,
-            'capital_stack': st.session_state.capital_stack,
-            'seasonality': st.session_state.seasonality,
-            'business_stage': st.session_state.business_stage,
+            'loan_rate': st.session_state.get('loan_rate', 0.06),
+            'loan_term': st.session_state.get('loan_term', 10),
+            'ar_days': st.session_state.get('ar_days', 0),
+            'ap_days': st.session_state.get('ap_days', 0),
+            'inventory_days': st.session_state.get('inventory_days', 0),
+            'tax_rate': st.session_state.get('tax_rate', 0.25),
+            'annual_depreciation': st.session_state.get('annual_depreciation', 0.0),
+            'owner_compensation': st.session_state.get('owner_compensation', {'mode': 'distribution', 'amount': 0.0}),
+            'mode': st.session_state.get('mode', 'Basic'),
+            'capital_stack': st.session_state.get('capital_stack', {}),
+            'seasonality': st.session_state.get('seasonality', {'enabled': False}),
+            'business_stage': st.session_state.get('business_stage', 'acquisition'),
             'model_mode': st.session_state.get('model_mode', 'startup'),
             'working_capital_source': st.session_state.get('working_capital_source', 'buyer_injected')
         }

@@ -13,18 +13,33 @@ st.set_page_config(
 
 def initialize_session_state():
     """
-    Global session state initialization (WPP-SESSION-INIT-001).
+    Global session state initialization (WPP-SESSION-INIT-001, WPP-SESSION-INIT-002).
     Ensures core session state variables are initialized before page routing.
     """
     defaults = {
+        # scenario
+        "scenario_name": "Business Scenario",
+        
+        # model inputs
         "revenue_streams": [],
         "payroll_roles": [],
         "opex_categories": [],
         "financing_sources": [],
         "model_inputs": {},
+        
+        # forecast
         "forecast_periods": 36,
+        
+        # deal parameters
         "purchase_price": 0.0,
-        "scenario_name": "Business Scenario"
+        
+        # financing inputs
+        "loan_amount": 0.0,
+        "loan_rate": 0.06,
+        "loan_term_years": 10,
+        
+        # optimizer
+        "optimizer_results": None
     }
 
     for key, value in defaults.items():
