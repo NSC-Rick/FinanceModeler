@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import json
 from datetime import datetime
 from engine.validation import (
@@ -267,6 +268,21 @@ def render():
     
     st.title("Operating Model")
     st.caption("Structured financial and capital modeling framework")
+    
+    st.markdown("---")
+    
+    st.subheader("Quick Introduction")
+    
+    with st.expander("🎬 Watch the 2-minute introduction", expanded=True):
+        video_url = "https://drive.google.com/file/d/1-HBZbPMn7jBdKJ73A6GXUXNQdYrAW84e/preview"
+        
+        components.iframe(
+            video_url,
+            height=420,
+            scrolling=False
+        )
+    
+    st.markdown("---")
     
     st.markdown("""
     ### Welcome to Operating Model
