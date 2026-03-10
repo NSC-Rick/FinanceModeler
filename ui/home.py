@@ -10,10 +10,11 @@ from engine.validation import (
 from config.version import PLATFORM_VERSION, BUILD_DATE
 
 # Check if openpyxl is available for Excel export
+# TEMPORARILY DISABLED - Excel export functionality disabled
 try:
     import openpyxl
     from utils.exporters import export_scenario_to_excel
-    EXCEL_AVAILABLE = True
+    EXCEL_AVAILABLE = False  # Temporarily disabled
 except ImportError:
     EXCEL_AVAILABLE = False
     export_scenario_to_excel = None
