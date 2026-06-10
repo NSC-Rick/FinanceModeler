@@ -93,7 +93,6 @@ Adjust this value as you refine your assumptions.
         st.info("📊 **Retail Preset Active:** Revenue weighted toward Q4 holidays (Nov: 11%, Dec: 17.5%)")
         
         # Show visualization
-        import pandas as pd
         months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         chart_data = pd.DataFrame({
             'Month': months,
