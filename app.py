@@ -1,6 +1,7 @@
 import streamlit as st
 from ui import home, revenue_page, payroll_page, opex_page, financing_page, review_page, insights_page, modeler_page, optimizer_page
 from config.version import PLATFORM_VERSION, BUILD_DATE
+from utils.session_manager import check_and_prompt_restore, autosave_session
 
 
 st.set_page_config(
@@ -47,8 +48,14 @@ def initialize_session_state():
             st.session_state[key] = value
 
 
+# Check for saved session and prompt restore BEFORE initialization
+check_and_prompt_restore()
+
 # Initialize session state before page routing
 initialize_session_state()
+
+# Mark session as initialized (for autosave)
+st.session_state['session_initialized'] = True
 
 st.sidebar.title("Operating Model")
 

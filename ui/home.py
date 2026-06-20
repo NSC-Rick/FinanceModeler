@@ -8,16 +8,17 @@ from engine.validation import (
     model_inputs_to_session_state
 )
 from config.version import PLATFORM_VERSION, BUILD_DATE
+from utils.session_manager import autosave_session
 
 # Check if openpyxl is available for Excel export
-# TEMPORARILY DISABLED - Excel export functionality disabled
 try:
     import openpyxl
-    from utils.exporters import export_scenario_to_excel
-    EXCEL_AVAILABLE = False  # Temporarily disabled
+    from utils.excel_export import generate_excel_workbook, get_excel_filename
+    EXCEL_AVAILABLE = True
 except ImportError:
     EXCEL_AVAILABLE = False
-    export_scenario_to_excel = None
+    generate_excel_workbook = None
+    get_excel_filename = None
 
 
 def initialize_session_state():
@@ -310,10 +311,15 @@ def render():
         
         scenario_name = st.text_input(
             "Scenario Name",
-            value="Business Scenario",
+            value=st.session_state.get('scenario_name', "Business Scenario"),
             help="Name this scenario before downloading",
             key="scenario_name_input"
         )
+        
+        # Update session state and autosave if changed
+        if scenario_name != st.session_state.get('scenario_name'):
+            st.session_state.scenario_name = scenario_name
+            autosave_session()
         
         # Determine available export formats
         if EXCEL_AVAILABLE:
@@ -412,6 +418,7 @@ def render():
                 
                 if is_valid:
                     model_inputs_to_session_state(loaded_data, st.session_state)
+                    autosave_session()  # Autosave after loading
                     st.success("✅ Scenario loaded successfully!")
                     st.rerun()
                 else:
