@@ -170,6 +170,10 @@ def restore_session_data(session_data):
         st.session_state['session_restore_timestamp'] = session_data.get('timestamp', 'Unknown')
         st.session_state['session_restore_business'] = session_data.get('business_name', 'Unknown')
         
+        # Automatically clear unsaved changes flag (restore is a save action)
+        st.session_state['has_unsaved_changes'] = False
+        st.session_state['last_saved'] = datetime.now()
+        
         return True
     except Exception as e:
         st.error(f"Failed to restore session: {e}")

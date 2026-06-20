@@ -398,8 +398,8 @@ def render():
         json_data = json.dumps(model_inputs, indent=2)
         json_filename = f"{safe_name}_{timestamp}.json"
         
-        # Download button
-        st.download_button(
+        # Download button - automatically saves session after click
+        if st.download_button(
             label="💾 Save Model",
             data=json_data,
             file_name=json_filename,
@@ -407,13 +407,10 @@ def render():
             help="Download model as JSON file",
             use_container_width=True,
             key="save_model_button"
-        )
-        
-        # Separate button to mark as saved (workaround for download_button callback limitation)
-        if st.button("✅ Mark as Saved", use_container_width=True, help="Click after downloading to update save status"):
+        ):
+            # This block executes when button is clicked (before download)
             save_session()
-            st.success("✅ Marked as saved!")
-            st.rerun()
+            st.session_state['_just_saved'] = True
     
     with col_export:
         st.markdown("**Export to Excel**")
@@ -423,7 +420,8 @@ def render():
             excel_data = generate_excel_workbook(model_inputs, scenario_name)
             excel_filename = get_excel_filename(scenario_name)
             
-            st.download_button(
+            # Download button - automatically saves session after click
+            if st.download_button(
                 label="📊 Export to Excel",
                 data=excel_data,
                 file_name=excel_filename,
@@ -431,7 +429,10 @@ def render():
                 help="Download as Excel workbook",
                 use_container_width=True,
                 key="export_excel_button"
-            )
+            ):
+                # This block executes when button is clicked (before download)
+                save_session()
+                st.session_state['_just_saved'] = True
         else:
             st.button(
                 "📊 Export to Excel",
@@ -463,7 +464,7 @@ def render():
             
             if is_valid:
                 model_inputs_to_session_state(loaded_data, st.session_state)
-                save_session()  # Save after loading
+                save_session()  # Automatically clears unsaved flag
                 st.success("✅ Model loaded successfully!")
                 st.rerun()
             else:
@@ -496,7 +497,7 @@ def render():
                 defaults = get_default_model_inputs()
                 model_inputs_to_session_state(defaults, st.session_state)
                 st.session_state.show_reset_confirmation = False
-                save_session()  # Save after reset
+                save_session()  # Automatically clears unsaved flag
                 st.success("✅ Model reset to defaults!")
                 st.rerun()
         
