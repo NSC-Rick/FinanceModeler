@@ -356,41 +356,16 @@ def render():
         
         # Prepare export data based on format
         if export_format == "Excel (.xlsx)" and EXCEL_AVAILABLE:
-            # Get DataFrames from session state if available
-            income_statement_df = None
-            cash_flow_df = None
-            dscr_series = None
-            revenue_df = None
-            kpis_df = None
-            
-            if hasattr(st.session_state, 'income_statement_df'):
-                income_statement_df = st.session_state.income_statement_df
-            if hasattr(st.session_state, 'cash_flow_df'):
-                cash_flow_df = st.session_state.cash_flow_df
-            if hasattr(st.session_state, 'dscr_series'):
-                dscr_series = st.session_state.dscr_series
-            if hasattr(st.session_state, 'revenue_df'):
-                revenue_df = st.session_state.revenue_df
-            if hasattr(st.session_state, 'kpis_df'):
-                kpis_df = st.session_state.kpis_df
-            
-            export_data = export_scenario_to_excel(
-                model_inputs,
-                income_statement_df=income_statement_df,
-                cash_flow_df=cash_flow_df,
-                dscr_series_or_df=dscr_series,
-                revenue_df=revenue_df,
-                kpis_df=kpis_df,
-                include_raw_json=True
-            )
-            filename = f"{safe_name}_{timestamp}.xlsx"
+            # Generate professional Excel workbook
+            export_data = generate_excel_workbook(model_inputs, scenario_name)
+            filename = get_excel_filename(scenario_name)
             mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            button_label = "Download Scenario (Excel)"
+            button_label = "📥 Download Excel Workbook"
         else:
             export_data = json.dumps(model_inputs, indent=2)
             filename = f"{safe_name}_{timestamp}.json"
             mime_type = "application/json"
-            button_label = "Download Scenario (JSON)"
+            button_label = "📥 Download JSON"
         
         st.download_button(
             label=button_label,
