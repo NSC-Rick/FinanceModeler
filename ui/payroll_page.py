@@ -1,4 +1,5 @@
 import streamlit as st
+from utils.change_tracker import mark_changes
 
 
 def render():
@@ -22,7 +23,8 @@ def render():
                 role_name = st.text_input(
                     "Role Title",
                     value=role['role'],
-                    key=f"payroll_role_{idx}"
+                    key=f"payroll_role_{idx}",
+                    on_change=mark_changes
                 )
                 
                 headcount = st.number_input(
@@ -31,14 +33,16 @@ def render():
                     value=role['headcount'],
                     step=1,
                     key=f"payroll_headcount_{idx}",
-                    help="Number of employees in this role"
+                    help="Number of employees in this role",
+                    on_change=mark_changes
                 )
                 
                 pay_type = st.selectbox(
                     "Pay Type",
                     options=['salary', 'hourly'],
                     index=0 if role['pay_type'] == 'salary' else 1,
-                    key=f"payroll_paytype_{idx}"
+                    key=f"payroll_paytype_{idx}",
+                    on_change=mark_changes
                 )
                 
                 role_type = st.selectbox(
@@ -46,7 +50,8 @@ def render():
                     options=['indirect', 'direct'],
                     index=0 if role.get('role_type', 'indirect') == 'indirect' else 1,
                     key=f"payroll_roletype_{idx}",
-                    help="Direct: flows to COGS (production labor). Indirect: flows to Operating Expenses (overhead)"
+                    help="Direct: flows to COGS (production labor). Indirect: flows to Operating Expenses (overhead)",
+                    on_change=mark_changes
                 )
             
             with col2:
@@ -57,7 +62,8 @@ def render():
                         value=role['rate'],
                         step=1000.0,
                         key=f"payroll_rate_{idx}",
-                        help="Annual salary per employee"
+                        help="Annual salary per employee",
+                        on_change=mark_changes
                     )
                     hours_per_week = 40
                 else:
@@ -67,7 +73,8 @@ def render():
                         value=role['rate'],
                         step=0.5,
                         key=f"payroll_rate_{idx}",
-                        help="Hourly wage"
+                        help="Hourly wage",
+                        on_change=mark_changes
                     )
                     hours_per_week = st.number_input(
                         "Hours per Week",
@@ -75,7 +82,8 @@ def render():
                         max_value=168.0,
                         value=float(role.get('hours_per_week', 40)),
                         step=1.0,
-                        key=f"payroll_hours_{idx}"
+                        key=f"payroll_hours_{idx}",
+                        on_change=mark_changes
                     )
                 
                 annual_raise_pct = st.number_input(
@@ -86,7 +94,8 @@ def render():
                     step=0.01,
                     format="%.2f",
                     key=f"payroll_raise_{idx}",
-                    help="Annual raise percentage (e.g., 0.03 = 3%)"
+                    help="Annual raise percentage (e.g., 0.03 = 3%)",
+                    on_change=mark_changes
                 )
             
             with col3:
@@ -98,7 +107,8 @@ def render():
                     step=0.01,
                     format="%.4f",
                     key=f"payroll_tax_{idx}",
-                    help="Employer payroll taxes (e.g., 0.0765 = 7.65% for FICA)"
+                    help="Employer payroll taxes (e.g., 0.0765 = 7.65% for FICA)",
+                    on_change=mark_changes
                 )
                 
                 benefits_pct = st.number_input(
@@ -109,7 +119,8 @@ def render():
                     step=0.01,
                     format="%.2f",
                     key=f"payroll_benefits_{idx}",
-                    help="Benefits as % of wages (e.g., 0.15 = 15%)"
+                    help="Benefits as % of wages (e.g., 0.15 = 15%)",
+                    on_change=mark_changes
                 )
             
             st.session_state.payroll_roles[idx] = {

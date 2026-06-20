@@ -515,7 +515,8 @@ def render():
             "Time Mode",
             options=['monthly', 'annual'],
             index=0 if st.session_state.time_mode == 'monthly' else 1,
-            help="Monthly = 36 periods (3 years), Annual = 3 periods (3 years)"
+            help="Monthly = 36 periods (3 years), Annual = 3 periods (3 years)",
+            on_change=mark_changes
         )
         
         if time_mode != st.session_state.time_mode:

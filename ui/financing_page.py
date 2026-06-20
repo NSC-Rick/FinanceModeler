@@ -1,4 +1,5 @@
 import streamlit as st
+from utils.change_tracker import mark_changes
 
 
 def render():
@@ -16,7 +17,8 @@ def render():
         ["Basic", "Advanced"],
         index=0 if st.session_state.mode == "Basic" else 1,
         horizontal=True,
-        help="Advanced mode unlocks working capital and capital stack controls"
+        help="Advanced mode unlocks working capital and capital stack controls",
+        on_change=mark_changes
     )
     
     if st.session_state.mode == "Advanced":

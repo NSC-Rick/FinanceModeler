@@ -1,4 +1,5 @@
 import streamlit as st
+from utils.change_tracker import mark_changes
 
 
 def render():
@@ -25,7 +26,8 @@ def render():
                 name = st.text_input(
                     "Expense Name",
                     value=item['name'],
-                    key=f"opex_name_{idx}"
+                    key=f"opex_name_{idx}",
+                    on_change=mark_changes
                 )
                 
                 category = st.selectbox(
@@ -33,7 +35,8 @@ def render():
                     options=['fixed', 'semi-fixed', 'variable_pct_revenue'],
                     index=['fixed', 'semi-fixed', 'variable_pct_revenue'].index(item.get('category', 'fixed')),
                     key=f"opex_category_{idx}",
-                    help="Fixed: grows by rate. Semi-Fixed: grows by rate. Variable: % of revenue"
+                    help="Fixed: grows by rate. Semi-Fixed: grows by rate. Variable: % of revenue",
+                    on_change=mark_changes
                 )
             
             with col2:
@@ -46,7 +49,8 @@ def render():
                         step=0.01,
                         format="%.2f",
                         key=f"opex_amount_{idx}",
-                        help="Percentage of revenue (e.g., 0.03 = 3%)"
+                        help="Percentage of revenue (e.g., 0.03 = 3%)",
+                        on_change=mark_changes
                     )
                     growth_rate = 0.0
                 else:
@@ -56,7 +60,8 @@ def render():
                         value=item['amount'],
                         step=100.0,
                         key=f"opex_amount_{idx}",
-                        help=f"Initial {'monthly' if st.session_state.time_mode == 'monthly' else 'annual'} expense amount"
+                        help=f"Initial {'monthly' if st.session_state.time_mode == 'monthly' else 'annual'} expense amount",
+                        on_change=mark_changes
                     )
             
             with col3:
@@ -69,7 +74,8 @@ def render():
                         step=0.01,
                         format="%.2f",
                         key=f"opex_growth_{idx}",
-                        help="Annual growth rate (e.g., 0.03 = 3% inflation)"
+                        help="Annual growth rate (e.g., 0.03 = 3% inflation)",
+                        on_change=mark_changes
                     )
                 else:
                     growth_rate = 0.0

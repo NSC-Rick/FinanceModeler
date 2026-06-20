@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from utils.change_tracker import mark_changes
 
 def render():
     """Render the revenue configuration page."""
@@ -21,7 +22,8 @@ def render():
         value=st.session_state.global_cogs_pct,
         step=0.01,
         format="%.2f",
-        help="Default cost of goods sold as a percentage of revenue (e.g., 0.30 = 30%)"
+        help="Default cost of goods sold as a percentage of revenue (e.g., 0.30 = 30%)",
+        on_change=mark_changes
     )
     st.session_state.global_cogs_pct = global_cogs_pct
     
@@ -56,7 +58,8 @@ Adjust this value as you refine your assumptions.
         step=0.5,
         value=st.session_state.cogs_improvement_pct,
         format="%.1f",
-        help="Annual reduction in COGS % as operational efficiency improves (e.g., 2.0 = 2% improvement per year)"
+        help="Annual reduction in COGS % as operational efficiency improves (e.g., 2.0 = 2% improvement per year)",
+        on_change=mark_changes
     )
     st.session_state.cogs_improvement_pct = cogs_improvement
     
@@ -78,7 +81,8 @@ Adjust this value as you refine your assumptions.
         ["OFF", "Retail Preset", "Custom"],
         index=["OFF", "Retail Preset", "Custom"].index(st.session_state.seasonality['mode']),
         horizontal=True,
-        help="OFF: Even distribution. Retail: Holiday-weighted. Custom: Define your own (Advanced mode only)"
+        help="OFF: Even distribution. Retail: Holiday-weighted. Custom: Define your own (Advanced mode only)",
+        on_change=mark_changes
     )
     
     # Restrict Custom mode to Advanced
@@ -166,7 +170,8 @@ Adjust this value as you refine your assumptions.
         input_options,
         index=input_options.index(previous_method) if previous_method in input_options else 0,
         horizontal=True,
-        help="Monthly: Direct revenue input. Avg×Volume: Calculate from transaction data. Customers/Day: Behavioral model (Advanced only)"
+        help="Monthly: Direct revenue input. Avg×Volume: Calculate from transaction data. Customers/Day: Behavioral model (Advanced only)",
+        on_change=mark_changes
     )
     
     # Back-calculation logic (ONLY on method change)
@@ -205,7 +210,8 @@ Adjust this value as you refine your assumptions.
             step=100.0,
             format="%.2f",
             key="monthly_revenue_input",
-            help="Target monthly revenue for this stream"
+            help="Target monthly revenue for this stream",
+            on_change=mark_changes
         )
         st.session_state.monthly_revenue = monthly_revenue
         
@@ -224,7 +230,8 @@ Adjust this value as you refine your assumptions.
                 step=1.0,
                 format="%.2f",
                 key="avg_sale_input",
-                help="Average dollar amount per transaction"
+                help="Average dollar amount per transaction",
+                on_change=mark_changes
             )
             st.session_state.avg_sale = avg_sale
         
@@ -236,7 +243,8 @@ Adjust this value as you refine your assumptions.
                 step=1.0,
                 format="%.2f",
                 key="monthly_transactions_input",
-                help="Number of transactions per month"
+                help="Number of transactions per month",
+                on_change=mark_changes
             )
             st.session_state.monthly_transactions = monthly_transactions
         
@@ -259,7 +267,8 @@ Adjust this value as you refine your assumptions.
                 step=1.0,
                 format="%.2f",
                 key="customers_per_day_input",
-                help="Average number of customers per day"
+                help="Average number of customers per day",
+                on_change=mark_changes
             )
             st.session_state.customers_per_day = customers_per_day
             
@@ -271,7 +280,8 @@ Adjust this value as you refine your assumptions.
                 step=1.0,
                 format="%.2f",
                 key="days_open_input",
-                help="Number of days open per month"
+                help="Number of days open per month",
+                on_change=mark_changes
             )
             st.session_state.days_open = days_open
         
@@ -283,7 +293,8 @@ Adjust this value as you refine your assumptions.
                 step=1.0,
                 format="%.2f",
                 key="avg_sale_behavioral_input",
-                help="Average dollar amount per customer"
+                help="Average dollar amount per customer",
+                on_change=mark_changes
             )
             st.session_state.avg_sale = avg_sale
         
@@ -311,7 +322,8 @@ Adjust this value as you refine your assumptions.
         max_value=24,
         step=1,
         value=st.session_state.startup_ramp_months,
-        help="Number of months required to reach steady-state revenue. Set to 0 to disable ramp."
+        help="Number of months required to reach steady-state revenue. Set to 0 to disable ramp.",
+        on_change=mark_changes
     )
     st.session_state.startup_ramp_months = startup_ramp
     
