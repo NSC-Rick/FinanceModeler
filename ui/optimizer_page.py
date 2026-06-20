@@ -7,6 +7,7 @@ UI for running deal optimization to find optimal capital structures.
 import streamlit as st
 import pandas as pd
 from engine.deal_optimizer import run_deal_optimization
+from utils.change_tracker import mark_changes
 
 
 def render():

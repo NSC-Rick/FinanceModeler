@@ -8,6 +8,7 @@ Uses ONLY pre-computed summary metrics from Review page.
 
 import streamlit as st
 import streamlit.components.v1 as components
+from utils.change_tracker import mark_changes
 
 
 def render():
@@ -79,7 +80,8 @@ def render():
             step=1.0,
             format="%.0f%%",
             help="Adjust revenue up or down by percentage",
-            key="modeler_revenue_slider"
+            key="modeler_revenue_slider",
+            on_change=mark_changes
         )
     
     with col2:
@@ -91,7 +93,8 @@ def render():
             step=1.0,
             format="%.0f%%",
             help="Adjust operating expenses up or down by percentage",
-            key="modeler_expense_slider"
+            key="modeler_expense_slider",
+            on_change=mark_changes
         )
     
     # Scope toggle (for display only - Year 1 metrics already computed)
@@ -101,7 +104,8 @@ def render():
         index=0 if st.session_state.modeler_scope == "Year 1 Only" else 1,
         horizontal=True,
         help="Year 1 Only: adjustments apply to Year 1 metrics. Entire Forecast: conceptual (Year 1 metrics shown)",
-        key="modeler_scope_radio"
+        key="modeler_scope_radio",
+        on_change=mark_changes
     )
     
     st.divider()

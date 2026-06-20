@@ -17,5 +17,11 @@ def mark_changes():
     Example:
         st.number_input("Price", value=100, on_change=mark_changes)
     """
+    from datetime import datetime
     from utils.session_manager import mark_unsaved_changes
+    
+    # Mark unsaved changes
     mark_unsaved_changes()
+    
+    # Update last modified timestamp
+    st.session_state['last_modified'] = datetime.now()

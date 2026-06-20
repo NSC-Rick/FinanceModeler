@@ -9,6 +9,7 @@ from engine.validation import (
 )
 from config.version import PLATFORM_VERSION, BUILD_DATE
 from utils.session_manager import autosave_session, has_unsaved_changes, get_last_saved_timestamp, mark_unsaved_changes, save_session, load_session
+from utils.change_tracker import mark_changes
 
 # Check if openpyxl is available for Excel export
 try:
