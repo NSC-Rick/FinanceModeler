@@ -328,8 +328,8 @@ def render():
     col_status1, col_status2 = st.columns([2, 1])
     
     with col_status1:
-        # Autosave status
-        st.markdown("**Autosave:** ✅ Enabled")
+        # Autosave status - informational only
+        st.info("ℹ️ **Autosave Active** - Your work is automatically saved")
         
         # Last saved timestamp
         last_saved = get_last_saved_timestamp()
@@ -343,9 +343,9 @@ def render():
             else:
                 hours = time_ago.seconds // 3600
                 time_str = f"{hours} hour{'s' if hours != 1 else ''} ago"
-            st.markdown(f"**Last Saved:** {time_str}")
+            st.markdown(f"📅 **Last Saved:** {time_str}")
         else:
-            st.markdown("**Last Saved:** Never")
+            st.markdown("📅 **Last Saved:** Never")
     
     with col_status2:
         # Restore last session button
@@ -377,35 +377,42 @@ def render():
         st.session_state.scenario_name = scenario_name
         mark_unsaved_changes()
     
+    # Prepare model data for both save and export
+    model_inputs = session_state_to_model_inputs(st.session_state)
+    model_inputs['scenario_name'] = scenario_name
+    model_inputs['platform_version'] = PLATFORM_VERSION
+    model_inputs['build_date'] = BUILD_DATE
+    
+    # Sanitize filename
+    safe_name = scenario_name.strip().replace(" ", "_")
+    safe_name = "".join(c for c in safe_name if c.isalnum() or c in ('_', '-'))
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+    
     col_save, col_export = st.columns(2)
     
     with col_save:
         st.markdown("**Save Model (JSON)**")
         st.caption("💡 Save to reload later in the app")
         
-        model_inputs = session_state_to_model_inputs(st.session_state)
-        model_inputs['scenario_name'] = scenario_name
-        model_inputs['platform_version'] = PLATFORM_VERSION
-        model_inputs['build_date'] = BUILD_DATE
-        
-        # Sanitize filename
-        safe_name = scenario_name.strip().replace(" ", "_")
-        safe_name = "".join(c for c in safe_name if c.isalnum() or c in ('_', '-'))
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M')
-        
         json_data = json.dumps(model_inputs, indent=2)
         json_filename = f"{safe_name}_{timestamp}.json"
         
-        if st.download_button(
+        # Download button
+        st.download_button(
             label="💾 Save Model",
             data=json_data,
             file_name=json_filename,
             mime="application/json",
             help="Download model as JSON file",
-            use_container_width=True
-        ):
-            # Mark as saved when downloaded
+            use_container_width=True,
+            key="save_model_button"
+        )
+        
+        # Separate button to mark as saved (workaround for download_button callback limitation)
+        if st.button("✅ Mark as Saved", use_container_width=True, help="Click after downloading to update save status"):
             save_session()
+            st.success("✅ Marked as saved!")
+            st.rerun()
     
     with col_export:
         st.markdown("**Export to Excel**")
@@ -421,7 +428,8 @@ def render():
                 file_name=excel_filename,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 help="Download as Excel workbook",
-                use_container_width=True
+                use_container_width=True,
+                key="export_excel_button"
             )
         else:
             st.button(
