@@ -95,7 +95,7 @@ Adjust this value as you refine your assumptions.
         # Show visualization
         months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         chart_data = pd.DataFrame({
-            'Month': months,
+            'Month': pd.Categorical(months, categories=months, ordered=True),
             'Weight (%)': RETAIL_PRESET
         })
         st.bar_chart(chart_data.set_index('Month'))
@@ -135,7 +135,7 @@ Adjust this value as you refine your assumptions.
             
             # Show visualization
             chart_data = pd.DataFrame({
-                'Month': months,
+                'Month': pd.Categorical(months, categories=months, ordered=True),
                 'Weight (%)': normalized_weights
             })
             st.bar_chart(chart_data.set_index('Month'))
