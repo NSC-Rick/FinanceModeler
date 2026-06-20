@@ -8,7 +8,7 @@ from engine.validation import (
     model_inputs_to_session_state
 )
 from config.version import PLATFORM_VERSION, BUILD_DATE
-from utils.session_manager import autosave_session
+from utils.session_manager import autosave_session, has_unsaved_changes, get_last_saved_timestamp, mark_unsaved_changes, save_session, load_session
 
 # Check if openpyxl is available for Excel export
 try:
@@ -297,119 +297,189 @@ def render():
     
     st.divider()
     
-    st.subheader("Scenario Management")
+    # Show unsaved changes banner if needed
+    if has_unsaved_changes():
+        st.warning("⚠️ **You have unsaved changes.** Save your model to preserve your work.")
+    
+    st.subheader("Model Management")
     
     st.markdown("""
-    Save your current model as a JSON file or load a previously saved scenario.
-    All inputs will be preserved and can be restored later.
+    Manage your financial model: save, load, export, and restore sessions.
     """)
     
-    col1, col2, col3 = st.columns(3)
+    # ========== SECTION A: SESSION STATUS ==========
+    st.markdown("### 📊 Session Status")
     
-    with col1:
-        st.markdown("**💾 Save Scenario**")
+    col_status1, col_status2 = st.columns([2, 1])
+    
+    with col_status1:
+        # Autosave status
+        st.markdown("**Autosave:** ✅ Enabled")
         
-        scenario_name = st.text_input(
-            "Scenario Name",
-            value=st.session_state.get('scenario_name', "Business Scenario"),
-            help="Name this scenario before downloading",
-            key="scenario_name_input"
-        )
-        
-        # Update session state and autosave if changed
-        if scenario_name != st.session_state.get('scenario_name'):
-            st.session_state.scenario_name = scenario_name
-            autosave_session()
-        
-        # Determine available export formats
-        if EXCEL_AVAILABLE:
-            export_formats = ["Excel (.xlsx)", "JSON"]
-            format_help = "Choose export format: Excel for spreadsheet analysis, JSON for data portability"
+        # Last saved timestamp
+        last_saved = get_last_saved_timestamp()
+        if last_saved:
+            time_ago = datetime.now() - last_saved
+            if time_ago.seconds < 60:
+                time_str = "Just now"
+            elif time_ago.seconds < 3600:
+                minutes = time_ago.seconds // 60
+                time_str = f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+            else:
+                hours = time_ago.seconds // 3600
+                time_str = f"{hours} hour{'s' if hours != 1 else ''} ago"
+            st.markdown(f"**Last Saved:** {time_str}")
         else:
-            export_formats = ["JSON"]
-            format_help = "Excel export unavailable (openpyxl not installed). JSON export available."
-        
-        export_format = st.radio(
-            "Export Format",
-            export_formats,
-            horizontal=True,
-            help=format_help
-        )
-        
-        # Show warning if Excel not available and user might expect it
-        if not EXCEL_AVAILABLE and len(export_formats) == 1:
-            st.warning("⚠️ Excel export is unavailable. Install openpyxl to enable Excel (.xlsx) exports.")
+            st.markdown("**Last Saved:** Never")
+    
+    with col_status2:
+        # Restore last session button
+        saved_session = load_session()
+        if saved_session:
+            if st.button("🔄 Restore Last Session", use_container_width=True):
+                from utils.session_manager import restore_session_data
+                if restore_session_data(saved_session):
+                    st.success("✅ Session restored!")
+                    st.rerun()
+        else:
+            st.button("🔄 Restore Last Session", disabled=True, use_container_width=True, help="No saved session available")
+    
+    st.divider()
+    
+    # ========== SECTION B: SAVE & EXPORT ==========
+    st.markdown("### 💾 Save & Export")
+    
+    # Model name field
+    scenario_name = st.text_input(
+        "Model Name",
+        value=st.session_state.get('scenario_name', "Business Scenario"),
+        help="Name your financial model",
+        key="scenario_name_input"
+    )
+    
+    # Update session state and mark unsaved if changed
+    if scenario_name != st.session_state.get('scenario_name'):
+        st.session_state.scenario_name = scenario_name
+        mark_unsaved_changes()
+    
+    col_save, col_export = st.columns(2)
+    
+    with col_save:
+        st.markdown("**Save Model (JSON)**")
+        st.caption("💡 Save to reload later in the app")
         
         model_inputs = session_state_to_model_inputs(st.session_state)
-        
-        # Add scenario name, platform version, and build date to model inputs for exports
         model_inputs['scenario_name'] = scenario_name
         model_inputs['platform_version'] = PLATFORM_VERSION
         model_inputs['build_date'] = BUILD_DATE
         
-        # Sanitize filename: replace spaces with underscores, remove special chars
+        # Sanitize filename
         safe_name = scenario_name.strip().replace(" ", "_")
         safe_name = "".join(c for c in safe_name if c.isalnum() or c in ('_', '-'))
-        
-        # Add timestamp to filename (YYYYMMDD_HHMM)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M')
         
-        # Prepare export data based on format
-        if export_format == "Excel (.xlsx)" and EXCEL_AVAILABLE:
-            # Generate professional Excel workbook
-            export_data = generate_excel_workbook(model_inputs, scenario_name)
-            filename = get_excel_filename(scenario_name)
-            mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            button_label = "📥 Download Excel Workbook"
+        json_data = json.dumps(model_inputs, indent=2)
+        json_filename = f"{safe_name}_{timestamp}.json"
+        
+        if st.download_button(
+            label="💾 Save Model",
+            data=json_data,
+            file_name=json_filename,
+            mime="application/json",
+            help="Download model as JSON file",
+            use_container_width=True
+        ):
+            # Mark as saved when downloaded
+            save_session()
+    
+    with col_export:
+        st.markdown("**Export to Excel**")
+        st.caption("📊 Spreadsheet for analysis & sharing")
+        
+        if EXCEL_AVAILABLE:
+            excel_data = generate_excel_workbook(model_inputs, scenario_name)
+            excel_filename = get_excel_filename(scenario_name)
+            
+            st.download_button(
+                label="📊 Export to Excel",
+                data=excel_data,
+                file_name=excel_filename,
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                help="Download as Excel workbook",
+                use_container_width=True
+            )
         else:
-            export_data = json.dumps(model_inputs, indent=2)
-            filename = f"{safe_name}_{timestamp}.json"
-            mime_type = "application/json"
-            button_label = "📥 Download JSON"
-        
-        st.download_button(
-            label=button_label,
-            data=export_data,
-            file_name=filename,
-            mime=mime_type,
-            help=f"Download current scenario as {export_format}"
-        )
+            st.button(
+                "📊 Export to Excel",
+                disabled=True,
+                use_container_width=True,
+                help="Excel export unavailable (openpyxl not installed)"
+            )
+            st.caption("⚠️ Install openpyxl to enable")
     
-    with col2:
-        st.markdown("**📂 Load Scenario**")
-        uploaded_file = st.file_uploader(
-            "Upload Scenario",
-            type=["json"],
-            help="Upload a previously saved scenario JSON file",
-            label_visibility="collapsed"
-        )
-        
-        if uploaded_file is not None:
-            try:
-                json_content = uploaded_file.read().decode('utf-8')
-                loaded_data = json.loads(json_content)
-                
-                is_valid, error_msg = validate_scenario_json(loaded_data)
-                
-                if is_valid:
-                    model_inputs_to_session_state(loaded_data, st.session_state)
-                    autosave_session()  # Autosave after loading
-                    st.success("✅ Scenario loaded successfully!")
-                    st.rerun()
-                else:
-                    st.error(f"❌ Invalid scenario file: {error_msg}")
-            except json.JSONDecodeError as e:
-                st.error(f"❌ Invalid JSON file: {str(e)}")
-            except Exception as e:
-                st.error(f"❌ Error loading scenario: {str(e)}")
+    st.divider()
     
-    with col3:
-        st.markdown("**🔄 Reset Model**")
-        if st.button("Reset to Defaults", help="Reset all inputs to default values"):
-            defaults = get_default_model_inputs()
-            model_inputs_to_session_state(defaults, st.session_state)
-            st.success("✅ Model reset to defaults!")
+    # ========== SECTION C: LOAD MODEL ==========
+    st.markdown("### 📂 Load Model")
+    st.caption("Upload a previously saved JSON model file")
+    
+    uploaded_file = st.file_uploader(
+        "Upload Model",
+        type=["json"],
+        help="Upload a previously saved model JSON file",
+        label_visibility="collapsed"
+    )
+    
+    if uploaded_file is not None:
+        try:
+            json_content = uploaded_file.read().decode('utf-8')
+            loaded_data = json.loads(json_content)
+            
+            is_valid, error_msg = validate_scenario_json(loaded_data)
+            
+            if is_valid:
+                model_inputs_to_session_state(loaded_data, st.session_state)
+                save_session()  # Save after loading
+                st.success("✅ Model loaded successfully!")
+                st.rerun()
+            else:
+                st.error(f"❌ Invalid model file: {error_msg}")
+        except json.JSONDecodeError as e:
+            st.error(f"❌ Invalid JSON file: {str(e)}")
+        except Exception as e:
+            st.error(f"❌ Error loading model: {str(e)}")
+    
+    st.divider()
+    
+    # ========== SECTION D: RESET MODEL ==========
+    st.markdown("### 🔄 Reset Model")
+    st.caption("Reset all inputs to default values")
+    
+    # Use session state for confirmation
+    if 'show_reset_confirmation' not in st.session_state:
+        st.session_state.show_reset_confirmation = False
+    
+    if not st.session_state.show_reset_confirmation:
+        if st.button("🔄 Reset to Defaults", help="Reset all inputs to default values"):
+            st.session_state.show_reset_confirmation = True
             st.rerun()
+    else:
+        st.warning("⚠️ **Are you sure?** This will reset all model inputs to default values. This action cannot be undone.")
+        col_confirm, col_cancel = st.columns(2)
+        
+        with col_confirm:
+            if st.button("✅ Yes, Reset", type="primary", use_container_width=True):
+                defaults = get_default_model_inputs()
+                model_inputs_to_session_state(defaults, st.session_state)
+                st.session_state.show_reset_confirmation = False
+                save_session()  # Save after reset
+                st.success("✅ Model reset to defaults!")
+                st.rerun()
+        
+        with col_cancel:
+            if st.button("❌ Cancel", use_container_width=True):
+                st.session_state.show_reset_confirmation = False
+                st.rerun()
     
     st.divider()
     

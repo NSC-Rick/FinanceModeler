@@ -1,7 +1,7 @@
 import streamlit as st
 from ui import home, revenue_page, payroll_page, opex_page, financing_page, review_page, insights_page, modeler_page, optimizer_page
 from config.version import PLATFORM_VERSION, BUILD_DATE
-from utils.session_manager import check_and_prompt_restore, autosave_session
+from utils.session_manager import check_and_prompt_restore, autosave_session, has_unsaved_changes
 
 
 st.set_page_config(
@@ -99,6 +99,12 @@ st.sidebar.markdown("""
     payroll_count=len(st.session_state.get('payroll_roles', [])),
     opex_count=len(st.session_state.get('opex_items', []))
 ))
+
+# Unsaved changes indicator
+if has_unsaved_changes():
+    st.sidebar.warning("🟡 **Unsaved Changes**")
+else:
+    st.sidebar.success("🟢 **Saved**")
 
 page = pages[selection]
 page.render()

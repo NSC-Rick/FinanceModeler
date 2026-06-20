@@ -89,10 +89,42 @@ def save_session():
         with open(SESSION_FILE, 'w') as f:
             json.dump(session_data, f, indent=2)
         
+        # Update session state tracking
+        st.session_state['last_saved_timestamp'] = datetime.now()
+        st.session_state['has_unsaved_changes'] = False
+        
         return True
     except Exception as e:
         st.error(f"Failed to save session: {e}")
         return False
+
+
+def mark_unsaved_changes():
+    """
+    Mark that the model has unsaved changes.
+    Call this whenever user makes a change to model inputs.
+    """
+    st.session_state['has_unsaved_changes'] = True
+
+
+def has_unsaved_changes():
+    """
+    Check if there are unsaved changes.
+    
+    Returns:
+        bool: True if there are unsaved changes, False otherwise
+    """
+    return st.session_state.get('has_unsaved_changes', False)
+
+
+def get_last_saved_timestamp():
+    """
+    Get the last saved timestamp.
+    
+    Returns:
+        datetime or None: Last saved timestamp, or None if never saved
+    """
+    return st.session_state.get('last_saved_timestamp', None)
 
 
 def load_session():
