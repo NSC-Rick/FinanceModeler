@@ -34,7 +34,8 @@ def render():
             "Business Stage",
             ["Startup", "Acquisition", "Existing Business"],
             index=["startup", "acquisition", "existing"].index(st.session_state.business_stage),
-            help="Determines Period 0 working capital behavior. Startup/Acquisition prevents phantom AP creation."
+            help="Determines Period 0 working capital behavior. Startup/Acquisition prevents phantom AP creation.",
+            on_change=mark_changes
         )
         
         # Map display value to internal value
@@ -61,7 +62,8 @@ def render():
             ["Startup", "Acquisition"],
             index=0 if st.session_state.get('model_mode', 'startup') == 'startup' else 1,
             horizontal=True,
-            help="Determines how opening working capital balances (AR, AP, Inventory) are initialized"
+            help="Determines how opening working capital balances (AR, AP, Inventory) are initialized",
+            on_change=mark_changes
         )
         
         # Map display value to internal value
@@ -83,7 +85,8 @@ def render():
             ["Buyer Injected", "Seller Provided", "Loan Financed"],
             index=["buyer_injected", "seller_provided", "loan_financed"].index(st.session_state.get('working_capital_source', 'buyer_injected')),
             horizontal=True,
-            help="Determines how working capital is financed at closing"
+            help="Determines how working capital is financed at closing",
+            on_change=mark_changes
         )
         
         # Map display value to internal value
@@ -118,7 +121,8 @@ def render():
                     min_value=0.0,
                     value=st.session_state.starting_ar_balance,
                     step=1000.0,
-                    help="Accounts Receivable balance at Period 0 start"
+                    help="Accounts Receivable balance at Period 0 start",
+                    on_change=mark_changes
                 )
             
             with col2:
@@ -127,7 +131,8 @@ def render():
                     min_value=0.0,
                     value=st.session_state.starting_ap_balance,
                     step=1000.0,
-                    help="Accounts Payable balance at Period 0 start (creates supplier credit)"
+                    help="Accounts Payable balance at Period 0 start (creates supplier credit)",
+                    on_change=mark_changes
                 )
             
             with col3:
@@ -136,7 +141,8 @@ def render():
                     min_value=0.0,
                     value=st.session_state.starting_inventory_balance,
                     step=1000.0,
-                    help="Inventory balance at Period 0 start"
+                    help="Inventory balance at Period 0 start",
+                    on_change=mark_changes
                 )
         
         st.divider()
@@ -163,7 +169,8 @@ def render():
                     value=st.session_state.capital_stack['uses']['business_purchase_price'],
                     step=10000.0,
                     key="cs_business_purchase_price",
-                    help="Purchase price of the business operations and assets"
+                    help="Purchase price of the business operations and assets",
+                    on_change=mark_changes
                 )
                 
                 inventory_adjustment = st.number_input(
@@ -172,7 +179,8 @@ def render():
                     value=st.session_state.capital_stack['uses']['inventory_adjustment'],
                     step=1000.0,
                     key="cs_inventory",
-                    help="Additional inventory to be purchased"
+                    help="Additional inventory to be purchased",
+                    on_change=mark_changes
                 )
             
             with col2:
@@ -182,7 +190,8 @@ def render():
                     value=st.session_state.capital_stack['uses']['business_closing_costs'],
                     step=1000.0,
                     key="cs_business_closing",
-                    help="Legal, accounting, and other business closing costs"
+                    help="Legal, accounting, and other business closing costs",
+                    on_change=mark_changes
                 )
             
             # Calculate total business uses
@@ -204,7 +213,8 @@ def render():
                     value=st.session_state.capital_stack['uses']['real_estate_purchase'],
                     step=10000.0,
                     key="cs_real_estate_purchase",
-                    help="Purchase price of real estate property"
+                    help="Purchase price of real estate property",
+                    on_change=mark_changes
                 )
             
             with col2:
@@ -214,7 +224,8 @@ def render():
                     value=st.session_state.capital_stack['uses']['real_estate_closing_costs'],
                     step=1000.0,
                     key="cs_real_estate_closing",
-                    help="Legal, title, and other real estate closing costs"
+                    help="Legal, title, and other real estate closing costs",
+                    on_change=mark_changes
                 )
             
             # Calculate total real estate uses
@@ -236,7 +247,8 @@ def render():
                     value=st.session_state.capital_stack['uses']['working_capital'],
                     step=1000.0,
                     key="cs_working_capital",
-                    help="Cash reserve for operations"
+                    help="Cash reserve for operations",
+                    on_change=mark_changes
                 )
             
             with col2:
@@ -246,7 +258,8 @@ def render():
                     value=st.session_state.capital_stack['uses']['capex'],
                     step=1000.0,
                     key="cs_capex",
-                    help="Minor capital expenditures needed at closing"
+                    help="Minor capital expenditures needed at closing",
+                    on_change=mark_changes
                 )
             
             # Calculate total uses (aggregation)
@@ -269,7 +282,8 @@ def render():
                     value=st.session_state.capital_stack['sources']['buyer_equity'],
                     step=5000.0,
                     key="cs_buyer_equity",
-                    help="Buyer's cash equity contribution"
+                    help="Buyer's cash equity contribution",
+                    on_change=mark_changes
                 )
         
             with col2:
@@ -279,7 +293,8 @@ def render():
                     value=st.session_state.capital_stack['sources']['community_equity'],
                     step=5000.0,
                     key="cs_community_equity",
-                    help="Equity from community investors or partners"
+                    help="Equity from community investors or partners",
+                    on_change=mark_changes
                 )
         
             with col3:
@@ -289,7 +304,8 @@ def render():
                     value=st.session_state.capital_stack['sources']['donations'],
                     step=1000.0,
                     key="cs_donations",
-                    help="Grant funding or donations"
+                    help="Grant funding or donations",
+                    on_change=mark_changes
                 )
         
             st.markdown("**Debt**")
@@ -304,7 +320,8 @@ def render():
                     value=st.session_state.capital_stack['sources']['bank_loan']['amount'],
                     step=5000.0,
                     key="cs_bank_amount",
-                    help="Bank loan amount"
+                    help="Bank loan amount",
+                    on_change=mark_changes
                 )
             
                 bank_rate = st.number_input(
@@ -315,7 +332,8 @@ def render():
                     step=0.001,
                     format="%.3f",
                     key="cs_bank_rate",
-                    help="Annual interest rate (e.g., 0.06 = 6%)"
+                    help="Annual interest rate (e.g., 0.06 = 6%)",
+                    on_change=mark_changes
                 )
             
                 bank_term = st.number_input(
@@ -325,7 +343,8 @@ def render():
                     value=int(st.session_state.capital_stack['sources']['bank_loan']['term']),
                     step=1,
                     key="cs_bank_term",
-                    help="Loan term in years"
+                    help="Loan term in years",
+                    on_change=mark_changes
                 )
         
             with col2:
@@ -336,7 +355,8 @@ def render():
                     value=st.session_state.capital_stack['sources']['seller_note']['amount'],
                     step=5000.0,
                     key="cs_seller_amount",
-                    help="Seller financing amount"
+                    help="Seller financing amount",
+                    on_change=mark_changes
                 )
             
                 seller_rate = st.number_input(
@@ -347,7 +367,8 @@ def render():
                     step=0.001,
                     format="%.3f",
                     key="cs_seller_rate",
-                    help="Annual interest rate (e.g., 0.05 = 5%)"
+                    help="Annual interest rate (e.g., 0.05 = 5%)",
+                    on_change=mark_changes
                 )
             
                 seller_term = st.number_input(
@@ -357,7 +378,8 @@ def render():
                     value=int(st.session_state.capital_stack['sources']['seller_note']['term']),
                     step=1,
                     key="cs_seller_term",
-                    help="Loan term in years"
+                    help="Loan term in years",
+                    on_change=mark_changes
                 )
         
             # Update session state
@@ -517,7 +539,8 @@ def render():
                 value=st.session_state.business_loan_amount,
                 step=1000.0,
                 key="business_loan_amount_input",
-                help="Loan amount for business acquisition"
+                help="Loan amount for business acquisition",
+                on_change=mark_changes
             )
             st.session_state.business_loan_amount = business_loan_amount
         
@@ -530,7 +553,8 @@ def render():
                 step=0.001,
                 format="%.3f",
                 key="business_interest_rate_input",
-                help="Annual interest rate (e.g., 0.06 = 6%)"
+                help="Annual interest rate (e.g., 0.06 = 6%)",
+                on_change=mark_changes
             )
             st.session_state.business_interest_rate = business_interest_rate
         
@@ -542,7 +566,8 @@ def render():
                 value=int(st.session_state.business_amort_years),
                 step=1,
                 key="business_amort_years_input",
-                help="Amortization period in years"
+                help="Amortization period in years",
+                on_change=mark_changes
             )
             st.session_state.business_amort_years = business_amort_years
         
@@ -570,7 +595,8 @@ def render():
                 value=st.session_state.real_estate_loan_amount,
                 step=1000.0,
                 key="real_estate_loan_amount_input",
-                help="Loan amount for real estate purchase"
+                help="Loan amount for real estate purchase",
+                on_change=mark_changes
             )
             st.session_state.real_estate_loan_amount = real_estate_loan_amount
         
@@ -583,7 +609,8 @@ def render():
                 step=0.001,
                 format="%.3f",
                 key="real_estate_interest_rate_input",
-                help="Annual interest rate (e.g., 0.06 = 6%)"
+                help="Annual interest rate (e.g., 0.06 = 6%)",
+                on_change=mark_changes
             )
             st.session_state.real_estate_interest_rate = real_estate_interest_rate
         
@@ -595,7 +622,8 @@ def render():
                 value=int(st.session_state.real_estate_amort_years),
                 step=1,
                 key="real_estate_amort_years_input",
-                help="Amortization period in years"
+                help="Amortization period in years",
+                on_change=mark_changes
             )
             st.session_state.real_estate_amort_years = real_estate_amort_years
         
@@ -667,7 +695,8 @@ def render():
                 value=st.session_state.loan_principal,
                 step=1000.0,
                 key="loan_principal_input",
-                help="Total loan amount"
+                help="Total loan amount",
+                on_change=mark_changes
             )
             st.session_state.loan_principal = loan_principal
             
@@ -679,7 +708,8 @@ def render():
                 step=0.001,
                 format="%.3f",
                 key="loan_rate_input",
-                help="Annual interest rate (e.g., 0.06 = 6%)"
+                help="Annual interest rate (e.g., 0.06 = 6%)",
+                on_change=mark_changes
             )
             st.session_state.loan_annual_rate = loan_annual_rate
         
@@ -690,7 +720,8 @@ def render():
                 value=int(st.session_state.loan_term_months),
                 step=12,
                 key="loan_term_input",
-                help="Loan term in months"
+                help="Loan term in months",
+                on_change=mark_changes
             )
             st.session_state.loan_term_months = loan_term_months
             
@@ -702,7 +733,8 @@ def render():
                 value=int(min(st.session_state.loan_start_period, max_start_period)),
                 step=1,
                 key="loan_start_input",
-                help="Period when loan disbursement occurs (0 = first period)"
+                help="Period when loan disbursement occurs (0 = first period)",
+                on_change=mark_changes
             )
         st.session_state.loan_start_period = loan_start_period
     
@@ -734,7 +766,8 @@ def render():
             options=['distribution', 'payroll'],
             index=0 if st.session_state.owner_compensation.get('mode', 'distribution') == 'distribution' else 1,
             key="owner_comp_mode",
-            help="Payroll: affects EBITDA and profitability. Distribution: affects only cash flow."
+            help="Payroll: affects EBITDA and profitability. Distribution: affects only cash flow.",
+            on_change=mark_changes
         )
     
     with col2:
@@ -744,7 +777,8 @@ def render():
             value=st.session_state.owner_compensation.get('amount', 0.0),
             step=5000.0,
             key="owner_comp_amount",
-            help="Annual amount for owner compensation"
+            help="Annual amount for owner compensation",
+            on_change=mark_changes
         )
     
     st.session_state.owner_compensation = {
@@ -777,7 +811,8 @@ def render():
             step=0.01,
             format="%.2f",
             key="tax_rate_input",
-            help="Corporate tax rate as decimal (e.g., 0.25 = 25%)"
+            help="Corporate tax rate as decimal (e.g., 0.25 = 25%)",
+            on_change=mark_changes
         )
         st.session_state.tax_rate = tax_rate
     
@@ -788,7 +823,8 @@ def render():
             value=st.session_state.annual_depreciation,
             step=1000.0,
             key="annual_depreciation_input",
-            help="Annual depreciation amount (will be divided by 12 for monthly mode)"
+            help="Annual depreciation amount (will be divided by 12 for monthly mode)",
+            on_change=mark_changes
         )
         st.session_state.annual_depreciation = annual_depreciation
     
@@ -810,7 +846,8 @@ def render():
             value=int(st.session_state.ar_days),
             step=1,
             key="ar_days_input",
-            help="Average days to collect payment from customers"
+            help="Average days to collect payment from customers",
+            on_change=mark_changes
         )
         st.session_state.ar_days = ar_days
     
@@ -821,7 +858,8 @@ def render():
             value=int(st.session_state.ap_days),
             step=1,
             key="ap_days_input",
-            help="Average days to pay suppliers"
+            help="Average days to pay suppliers",
+            on_change=mark_changes
         )
         st.session_state.ap_days = ap_days
     
@@ -832,6 +870,7 @@ def render():
             value=int(st.session_state.inventory_days),
             step=1,
             key="inventory_days_input",
-            help="Average days inventory is held"
+            help="Average days inventory is held",
+            on_change=mark_changes
         )
         st.session_state.inventory_days = inventory_days
