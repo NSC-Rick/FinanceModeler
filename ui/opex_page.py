@@ -90,6 +90,7 @@ def render():
             
             if st.button(f"Remove {name}", key=f"remove_opex_{idx}"):
                 st.session_state.opex_items.pop(idx)
+                mark_changes()
                 st.rerun()
     
     st.divider()
@@ -101,4 +102,5 @@ def render():
             'growth_rate': 0.03,
             'category': 'fixed'
         })
+        mark_changes()
         st.rerun()

@@ -137,6 +137,7 @@ def render():
             
             if st.button(f"Remove {role_name}", key=f"remove_payroll_{idx}"):
                 st.session_state.payroll_roles.pop(idx)
+                mark_changes()
                 st.rerun()
     
     st.divider()
@@ -153,4 +154,5 @@ def render():
             'benefits_pct': 0.15,
             'role_type': 'indirect'
         })
+        mark_changes()
         st.rerun()

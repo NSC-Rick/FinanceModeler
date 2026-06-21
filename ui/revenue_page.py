@@ -407,6 +407,7 @@ Adjust this value as you refine your assumptions.
             
             if st.button(f"Remove {name}", key=f"remove_rev_{idx}"):
                 st.session_state.revenue_streams.pop(idx)
+                mark_changes()
                 st.rerun()
     
     st.divider()
@@ -419,4 +420,5 @@ Adjust this value as you refine your assumptions.
             'growth_rate': 0.10,
             'cogs_override': None
         })
+        mark_changes()
         st.rerun()
