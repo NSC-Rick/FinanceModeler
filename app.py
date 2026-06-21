@@ -73,6 +73,14 @@ pages = {
 
 selection = st.sidebar.radio("Go to", list(pages.keys()))
 
+# Track page changes and scroll to top on navigation
+if 'previous_page' not in st.session_state:
+    st.session_state.previous_page = selection
+
+if st.session_state.previous_page != selection:
+    st.session_state.previous_page = selection
+    st.session_state['_scroll_to_top'] = True
+
 st.sidebar.divider()
 
 periods = st.session_state.get('periods', 36)
@@ -108,6 +116,19 @@ else:
 
 page = pages[selection]
 page.render()
+
+# Scroll to top if flag is set (after page navigation or restore/load/reset)
+if st.session_state.get('_scroll_to_top', False):
+    st.session_state['_scroll_to_top'] = False
+    # Inject JavaScript to scroll to top
+    st.markdown(
+        """
+        <script>
+            window.parent.document.querySelector('section.main').scrollTo(0, 0);
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
 
 # Sidebar footer with version
 st.sidebar.divider()

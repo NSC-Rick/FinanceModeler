@@ -355,6 +355,7 @@ def render():
             if st.button("🔄 Restore Last Session", use_container_width=True):
                 from utils.session_manager import restore_session_data
                 if restore_session_data(saved_session):
+                    st.session_state['_scroll_to_top'] = True
                     st.success("✅ Session restored!")
                     st.rerun()
         else:
@@ -465,6 +466,7 @@ def render():
             if is_valid:
                 model_inputs_to_session_state(loaded_data, st.session_state)
                 save_session()  # Automatically clears unsaved flag
+                st.session_state['_scroll_to_top'] = True
                 st.success("✅ Model loaded successfully!")
                 st.rerun()
             else:
@@ -498,6 +500,7 @@ def render():
                 model_inputs_to_session_state(defaults, st.session_state)
                 st.session_state.show_reset_confirmation = False
                 save_session()  # Automatically clears unsaved flag
+                st.session_state['_scroll_to_top'] = True
                 st.success("✅ Model reset to defaults!")
                 st.rerun()
         

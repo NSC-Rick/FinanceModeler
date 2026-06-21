@@ -81,14 +81,9 @@ Adjust this value as you refine your assumptions.
         ["OFF", "Retail Preset", "Custom"],
         index=["OFF", "Retail Preset", "Custom"].index(st.session_state.seasonality['mode']),
         horizontal=True,
-        help="OFF: Even distribution. Retail: Holiday-weighted. Custom: Define your own (Advanced mode only)",
+        help="OFF: Even distribution. Retail: Holiday-weighted. Custom: Define your own monthly weights",
         on_change=mark_changes
     )
-    
-    # Restrict Custom mode to Advanced
-    if seasonality_mode == "Custom" and st.session_state.mode == "Basic":
-        st.warning("⚠️ Custom seasonality requires Advanced mode. Switch to Advanced mode in Financing page.")
-        seasonality_mode = st.session_state.seasonality['mode']  # Revert to previous
     
     st.session_state.seasonality['mode'] = seasonality_mode
     st.session_state.seasonality['enabled'] = (seasonality_mode != "OFF")
