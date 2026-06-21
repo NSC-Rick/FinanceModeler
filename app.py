@@ -1,7 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
 from ui import home, revenue_page, payroll_page, opex_page, financing_page, review_page, insights_page, modeler_page, optimizer_page
-from config.version import PLATFORM_VERSION, BUILD_DATE
 from utils.session_manager import check_and_prompt_restore, autosave_session, has_unsaved_changes
 
 
@@ -86,24 +85,22 @@ if st.session_state.previous_page != selection:
 
 st.sidebar.divider()
 
+# Model Info - Dynamic session data
+model_name = st.session_state.get('scenario_name', 'Business Scenario')
 periods = st.session_state.get('periods', 36)
 time_mode = st.session_state.get('time_mode', 'monthly')
 forecast_years = periods // 12 if time_mode == 'monthly' else periods
 
 st.sidebar.markdown("""
 ### Model Info
-- **Platform Version:** {version}
-- **Build Date:** {build_date}
-- **Time Mode:** {mode}
+- **Model Name:** {name}
 - **Forecast Length:** {years} Years
 - **Periods:** {periods}
 - **Revenue Streams:** {rev_count}
 - **Payroll Roles:** {payroll_count}
 - **Opex Items:** {opex_count}
 """.format(
-    version=PLATFORM_VERSION,
-    build_date=BUILD_DATE,
-    mode=time_mode.capitalize(),
+    name=model_name,
     years=forecast_years,
     periods=periods,
     rev_count=len(st.session_state.get('revenue_streams', [])),
@@ -111,11 +108,27 @@ st.sidebar.markdown("""
     opex_count=len(st.session_state.get('opex_items', []))
 ))
 
-# Unsaved changes indicator
+# Save status and last saved timestamp
 if has_unsaved_changes():
     st.sidebar.warning("🟡 **Unsaved Changes**")
 else:
     st.sidebar.success("🟢 **Saved**")
+    
+    # Show last saved timestamp if available
+    from utils.session_manager import get_last_saved_timestamp
+    from datetime import datetime
+    last_saved = get_last_saved_timestamp()
+    if last_saved:
+        time_ago = datetime.now() - last_saved
+        if time_ago.seconds < 60:
+            time_str = "Just now"
+        elif time_ago.seconds < 3600:
+            minutes = time_ago.seconds // 60
+            time_str = f"{minutes} min ago"
+        else:
+            hours = time_ago.seconds // 3600
+            time_str = f"{hours} hr ago"
+        st.sidebar.caption(f"Last saved: {time_str}")
 
 page = pages[selection]
 page.render()
@@ -142,6 +155,3 @@ if st.session_state.get('_scroll_to_top', False):
         height=0
     )
 
-# Sidebar footer with version
-st.sidebar.divider()
-st.sidebar.markdown(f"<div style='text-align: center; color: #888; font-size: 0.85em;'>FinanceModeler v{PLATFORM_VERSION}</div>", unsafe_allow_html=True)
