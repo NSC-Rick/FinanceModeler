@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from ui import home, revenue_page, payroll_page, opex_page, financing_page, review_page, insights_page, modeler_page, optimizer_page
 from config.version import PLATFORM_VERSION, BUILD_DATE
 from utils.session_manager import check_and_prompt_restore, autosave_session, has_unsaved_changes
@@ -119,15 +120,24 @@ page.render()
 
 # Scroll to top if flag is set (after page navigation or restore/load/reset)
 if st.session_state.get('_scroll_to_top', False):
+    # Initialize scroll counter if not present
+    if '_scroll_counter' not in st.session_state:
+        st.session_state['_scroll_counter'] = 0
+    
+    # Increment counter to force component re-execution
+    st.session_state['_scroll_counter'] += 1
     st.session_state['_scroll_to_top'] = False
-    # Inject JavaScript to scroll to top
-    st.markdown(
-        """
-        <script>
-            window.parent.document.querySelector('section.main').scrollTo(0, 0);
-        </script>
+    
+    # Use st.components.v1.html with changing content to force re-execution
+    # The counter in HTML ensures the component re-renders each time
+    components.html(
+        f"""
+            <p style="display: none;">{st.session_state['_scroll_counter']}</p>
+            <script>
+                window.parent.document.querySelector('section.main').scrollTo(0, 0);
+            </script>
         """,
-        unsafe_allow_html=True
+        height=0
     )
 
 # Sidebar footer with version
