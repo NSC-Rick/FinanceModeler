@@ -81,6 +81,8 @@ if 'previous_page' not in st.session_state:
 if st.session_state.previous_page != selection:
     st.session_state.previous_page = selection
     st.session_state['_scroll_to_top'] = True
+    # Trigger rerun to execute scroll-to-top component
+    st.rerun()
 
 st.sidebar.divider()
 
