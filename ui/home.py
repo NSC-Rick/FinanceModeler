@@ -329,8 +329,12 @@ def render():
     col_status1, col_status2 = st.columns([2, 1])
     
     with col_status1:
-        # Autosave status - informational only
-        st.info("ℹ️ **Autosave Active** - Your work is automatically saved")
+        # Session recovery status
+        saved_session = load_session()
+        if saved_session:
+            st.info("ℹ️ **Session Recovery Enabled** - Restore your last session anytime")
+        else:
+            st.info("ℹ️ **Session Protection** - Save your work to enable recovery")
         
         # Last saved timestamp
         last_saved = get_last_saved_timestamp()
@@ -350,7 +354,6 @@ def render():
     
     with col_status2:
         # Restore last session button
-        saved_session = load_session()
         if saved_session:
             if st.button("🔄 Restore Last Session", use_container_width=True):
                 from utils.session_manager import restore_session_data
