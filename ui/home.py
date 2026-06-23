@@ -93,7 +93,7 @@ def initialize_session_state():
     
     # Legacy single loan (preserved for backward compatibility and Basic mode)
     if 'loan_principal' not in st.session_state:
-        st.session_state.loan_principal = 50000.0
+        st.session_state.loan_principal = 0.0
     
     if 'loan_annual_rate' not in st.session_state:
         st.session_state.loan_annual_rate = 0.06
