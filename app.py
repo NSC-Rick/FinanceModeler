@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from ui import home, revenue_page, payroll_page, opex_page, financing_page, review_page, insights_page, modeler_page, optimizer_page
 from utils.session_manager import check_and_prompt_restore, autosave_session, has_unsaved_changes
+from components.elevenlabs_widget import render_elevenlabs_widget
 
 
 st.set_page_config(
@@ -156,12 +157,5 @@ if st.session_state.get('_scroll_to_top', False):
     )
 
 # ElevenLabs Conversational AI Widget (Eric - AI Financial Coach)
-# Inject the widget script into the page
-st.markdown(
-    """
-    <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" type="text/javascript"></script>
-    <elevenlabs-convai agent-id="agent_9601kwzaq0jsfrhb0xzvzaxa0hx0"></elevenlabs-convai>
-    """,
-    unsafe_allow_html=True
-)
+render_elevenlabs_widget("agent_9601kwzaq0jsfrhb0xzvzaxa0hx0")
 
