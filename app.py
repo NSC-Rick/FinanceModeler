@@ -155,3 +155,12 @@ if st.session_state.get('_scroll_to_top', False):
         height=0
     )
 
+# ElevenLabs Conversational AI Widget (Eric - AI Financial Coach)
+components.html(
+    """
+        <elevenlabs-convai agent-id="agent_9601kwzaq0jsfrhb0xzvzaxa0hx0"></elevenlabs-convai>
+        <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+    """,
+    height=0
+)
+
