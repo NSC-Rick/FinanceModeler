@@ -6,6 +6,7 @@ import streamlit.components.v1 as components
 def render_elevenlabs_widget(agent_id: str):
     """
     Render the ElevenLabs conversational AI widget.
+    Attempts to inject into parent window to avoid iframe restrictions.
     
     Args:
         agent_id: The ElevenLabs agent ID
@@ -18,8 +19,54 @@ def render_elevenlabs_widget(agent_id: str):
             <meta name="viewport" content="width=device-width, initial-scale=1">
         </head>
         <body style="margin: 0; padding: 0;">
-            <elevenlabs-convai agent-id="{agent_id}"></elevenlabs-convai>
-            <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" type="text/javascript"></script>
+            <script>
+                (function() {{
+                    try {{
+                        // Try to inject into parent window
+                        var parentDoc = window.parent.document;
+                        
+                        // Check if script already loaded
+                        if (!parentDoc.querySelector('script[src*="convai-widget-embed"]')) {{
+                            // Load the ElevenLabs script
+                            var script = parentDoc.createElement('script');
+                            script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+                            script.type = 'text/javascript';
+                            script.async = true;
+                            
+                            script.onload = function() {{
+                                // Create the widget element
+                                if (!parentDoc.querySelector('elevenlabs-convai')) {{
+                                    var widget = parentDoc.createElement('elevenlabs-convai');
+                                    widget.setAttribute('agent-id', '{agent_id}');
+                                    parentDoc.body.appendChild(widget);
+                                    console.log('ElevenLabs widget injected successfully');
+                                }}
+                            }};
+                            
+                            parentDoc.head.appendChild(script);
+                        }} else {{
+                            // Script already loaded, just add widget if not present
+                            if (!parentDoc.querySelector('elevenlabs-convai')) {{
+                                var widget = parentDoc.createElement('elevenlabs-convai');
+                                widget.setAttribute('agent-id', '{agent_id}');
+                                parentDoc.body.appendChild(widget);
+                                console.log('ElevenLabs widget added to existing script');
+                            }}
+                        }}
+                    }} catch (e) {{
+                        console.error('Failed to inject ElevenLabs widget:', e);
+                        // Fallback: load in iframe
+                        var widget = document.createElement('elevenlabs-convai');
+                        widget.setAttribute('agent-id', '{agent_id}');
+                        document.body.appendChild(widget);
+                        
+                        var script = document.createElement('script');
+                        script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+                        script.type = 'text/javascript';
+                        document.head.appendChild(script);
+                    }}
+                }})();
+            </script>
         </body>
         </html>
     """
