@@ -253,6 +253,13 @@ def initialize_session_state():
     if 'days_open' not in st.session_state:
         st.session_state.days_open = 30.0
     
+    # Projection start date (for calendar labeling)
+    if 'projection_start_month' not in st.session_state:
+        st.session_state.projection_start_month = 1  # January
+    
+    if 'projection_start_year' not in st.session_state:
+        st.session_state.projection_start_year = datetime.now().year
+    
     # Modeler variables (persist during session, NOT saved to JSON)
     if 'modeler_revenue_adj' not in st.session_state:
         st.session_state.modeler_revenue_adj = 0.0
@@ -538,6 +545,43 @@ def render():
             value=f"3 Years ({st.session_state.periods} periods)",
             help=f"{'3 years × 12 months' if st.session_state.time_mode == 'monthly' else '3 years'}"
         )
+    
+    # Projection Start Date
+    st.markdown("#### Projection Start Date")
+    st.caption("Set the beginning of your projection timeline for calendar-based labeling")
+    
+    col_month, col_year = st.columns(2)
+    
+    month_names = ['January', 'February', 'March', 'April', 'May', 'June', 
+                   'July', 'August', 'September', 'October', 'November', 'December']
+    
+    with col_month:
+        start_month = st.selectbox(
+            "Start Month",
+            options=list(range(1, 13)),
+            format_func=lambda x: month_names[x-1],
+            index=st.session_state.projection_start_month - 1,
+            help="First month of your projection",
+            key="proj_start_month_select"
+        )
+        
+        if start_month != st.session_state.projection_start_month:
+            st.session_state.projection_start_month = start_month
+            mark_changes()
+    
+    with col_year:
+        current_year = datetime.now().year
+        start_year = st.selectbox(
+            "Start Year",
+            options=list(range(current_year - 2, current_year + 6)),
+            index=st.session_state.projection_start_year - (current_year - 2),
+            help="First year of your projection",
+            key="proj_start_year_select"
+        )
+        
+        if start_year != st.session_state.projection_start_year:
+            st.session_state.projection_start_year = start_year
+            mark_changes()
     
     st.divider()
     

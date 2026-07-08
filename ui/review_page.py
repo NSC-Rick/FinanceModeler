@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 from engine.model import build_model
 from engine.validation import validate_scenario_json
 from utils.formatters import safe_currency, safe_ratio, safe_percentage
+from utils.period_labels import format_dataframe_with_period_labels
 from ui.report_view import render_report
 from analysis.financial_metrics import compute_financial_metrics
 
@@ -185,8 +186,14 @@ def render():
             # Transpose: line items as rows, periods as columns
             income_transposed = income_statement.T
             
-            # Rename columns to Period 0, Period 1, etc.
-            income_transposed.columns = [f'Period {i}' for i in income_transposed.columns]
+            # Apply calendar-based period labels
+            start_month = st.session_state.get('projection_start_month', 1)
+            start_year = st.session_state.get('projection_start_year', 2026)
+            time_mode = st.session_state.get('time_mode', 'monthly')
+            
+            income_transposed = format_dataframe_with_period_labels(
+                income_transposed, start_month, start_year, time_mode
+            )
             income_transposed.index.name = 'Line Item'
             
             # Convert to % of revenue if selected
@@ -340,8 +347,14 @@ def render():
                 # Transpose: line items as rows, periods as columns
                 cash_flow_transposed = cash_flow.T
                 
-                # Rename columns to Period 0, Period 1, etc.
-                cash_flow_transposed.columns = [f'Period {i}' for i in cash_flow_transposed.columns]
+                # Apply calendar-based period labels
+                start_month = st.session_state.get('projection_start_month', 1)
+                start_year = st.session_state.get('projection_start_year', 2026)
+                time_mode = st.session_state.get('time_mode', 'monthly')
+                
+                cash_flow_transposed = format_dataframe_with_period_labels(
+                    cash_flow_transposed, start_month, start_year, time_mode
+                )
                 cash_flow_transposed.index.name = 'Line Item'
                 
                 st.dataframe(
@@ -497,6 +510,15 @@ def render():
             
             loan_schedule = outputs['loan_schedule'].copy()
             
+            # Apply calendar-based period labels
+            start_month = st.session_state.get('projection_start_month', 1)
+            start_year = st.session_state.get('projection_start_year', 2026)
+            time_mode = st.session_state.get('time_mode', 'monthly')
+            
+            loan_schedule = format_dataframe_with_period_labels(
+                loan_schedule, start_month, start_year, time_mode
+            )
+            
             st.dataframe(
                 loan_schedule.style.format("${:,.2f}"),
                 use_container_width=True
@@ -513,6 +535,15 @@ def render():
             st.subheader("Key Performance Indicators")
             
             kpis = outputs['kpis'].copy()
+            
+            # Apply calendar-based period labels
+            start_month = st.session_state.get('projection_start_month', 1)
+            start_year = st.session_state.get('projection_start_year', 2026)
+            time_mode = st.session_state.get('time_mode', 'monthly')
+            
+            kpis = format_dataframe_with_period_labels(
+                kpis, start_month, start_year, time_mode
+            )
             kpis.index.name = 'Period'
             
             # Use safe formatters to handle None/NaN values
@@ -729,11 +760,18 @@ def render():
         with tab5:
             st.subheader("Visualizations")
             
+            # Generate calendar-based period labels for charts
+            from utils.period_labels import generate_period_labels
+            start_month = st.session_state.get('projection_start_month', 1)
+            start_year = st.session_state.get('projection_start_year', 2026)
+            time_mode = st.session_state.get('time_mode', 'monthly')
+            period_labels = generate_period_labels(start_month, start_year, st.session_state.periods, time_mode)
+            
             fig_revenue = go.Figure()
             
             # Add actual revenue line
             fig_revenue.add_trace(go.Scatter(
-                x=list(range(st.session_state.periods)),
+                x=period_labels,
                 y=outputs['income_statement']['revenue'].values,
                 mode='lines+markers',
                 name='Revenue',
@@ -754,7 +792,7 @@ def render():
                     full_revenue.append(full_rev)
                 
                 fig_revenue.add_trace(go.Scatter(
-                    x=list(range(st.session_state.periods)),
+                    x=period_labels,
                     y=full_revenue,
                     mode='lines',
                     name='Full Revenue (Steady-State)',
@@ -785,7 +823,7 @@ def render():
             if 'cash_flow_statement' in outputs and outputs['cash_flow_statement'] is not None:
                 fig_cash = go.Figure()
                 fig_cash.add_trace(go.Scatter(
-                    x=list(range(st.session_state.periods)),
+                    x=period_labels,
                     y=outputs['cash_flow_statement']['ending_cash'].values,
                     mode='lines+markers',
                     name='Ending Cash',

@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from ui import home, revenue_page, payroll_page, opex_page, financing_page, review_page, insights_page, modeler_page, optimizer_page
 from utils.session_manager import check_and_prompt_restore, autosave_session, has_unsaved_changes
+from utils.custom_styles import apply_custom_styles
 from components.elevenlabs_widget import render_elevenlabs_widget
 
 
@@ -11,6 +12,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Apply custom styles for improved readability (Enhancement 3)
+apply_custom_styles()
 
 
 def initialize_session_state():

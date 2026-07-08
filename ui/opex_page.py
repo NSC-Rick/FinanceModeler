@@ -98,7 +98,7 @@ def render():
     if st.button("➕ Add Operating Expense"):
         st.session_state.opex_items.append({
             'name': f'Expense {len(st.session_state.opex_items) + 1}',
-            'amount': 1000.0,
+            'amount': 0.0,
             'growth_rate': 0.03,
             'category': 'fixed'
         })
