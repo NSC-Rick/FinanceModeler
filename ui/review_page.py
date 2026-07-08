@@ -289,7 +289,15 @@ def render():
             
             # Transpose to match income statement format
             overlay_transposed = overlay_df.T
-            overlay_transposed.columns = [f'Period {i}' for i in overlay_transposed.columns]
+            
+            # Apply calendar-based period labels
+            start_month = st.session_state.get('projection_start_month', 1)
+            start_year = st.session_state.get('projection_start_year', 2026)
+            time_mode = st.session_state.get('time_mode', 'monthly')
+            
+            overlay_transposed = format_dataframe_with_period_labels(
+                overlay_transposed, start_month, start_year, time_mode
+            )
             overlay_transposed.index.name = 'Line Item'
             
             # Display based on selected view
