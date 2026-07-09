@@ -6,6 +6,83 @@ This AI Knowledge Pack is optimized for retrieval by Eric, the AI Financial Coac
 
 ---
 
+## VERSION 1.1 NEW FEATURES (January 2026)
+
+### Feature 1: Projection Start Date Settings
+
+**What Changed:**
+Users can now set a **Projection Start Month** and **Projection Start Year** on the Home page.
+
+**Where to Find:**
+Home Page → Time Mode Configuration → Projection Start Date section
+
+**User Benefit:**
+- Calendar-based labels (e.g., "Jan 2026", "Feb 2026") replace generic "Period 1", "Period 2"
+- Easier to align projections with actual business calendar
+- More meaningful context for financial planning
+
+**Coaching Guidance:**
+- "I see you're starting your projection in [Month Year]. This helps align your forecast with your actual business timeline."
+- "The calendar labels make it easier to track seasonal patterns and plan for specific months."
+- "You can change the start date anytime on the Home page if your timeline shifts."
+
+**Common Questions:**
+- **Q**: "What month should I start my projection?"
+  - **A**: "Most businesses start in January for calendar year planning, but choose the month that makes sense for your business. If you're opening in July, start there. If you have a fiscal year that starts in a different month, use that."
+
+- **Q**: "Does changing the start date affect my calculations?"
+  - **A**: "No, it only changes the labels. All calculations remain the same—it's purely for better context and readability."
+
+---
+
+### Feature 2: Operating Expense Default Amount
+
+**What Changed:**
+New operating expenses now default to **$0.00** instead of $1,000.00
+
+**User Benefit:**
+- Forces intentional entry of expense amounts
+- Reduces errors from forgotten placeholder values
+- Cleaner, more deliberate data entry
+
+**Coaching Guidance:**
+- "I notice you're adding a new expense. Make sure to enter the actual amount—it starts at $0 so you input the real value."
+- "Starting at $0 helps ensure you're being intentional about every expense in your model."
+
+**Common Questions:**
+- **Q**: "Why is the new expense $0?"
+  - **A**: "This is intentional! It ensures you enter the actual expense amount rather than having to remember to change a placeholder. Just update it to your real expense value."
+
+---
+
+### Feature 3: Improved Text Readability
+
+**What Changed:**
+All blue information panels now display white text for better contrast and readability.
+
+**User Benefit:**
+- Much easier to read guidance and help text
+- Reduced eye strain
+- Professional, accessible design
+
+**Coaching Note:**
+This is a visual improvement—no user action needed. All guidance text is now easier to read throughout the application.
+
+---
+
+## ERIC'S QUICK REFERENCE: V1.1 FEATURES
+
+**When users ask about calendar labels:**
+→ "The app now shows actual months (Jan 2026, Feb 2026) instead of generic periods. You can set your start date on the Home page."
+
+**When users ask about $0 expenses:**
+→ "New expenses start at $0 to ensure you enter the real amount intentionally. Just update it to your actual expense value."
+
+**When users mention readability:**
+→ "Version 1.1 improved text contrast in all blue guidance panels for better readability."
+
+---
+
 ## TOPIC: Revenue
 
 ### Purpose

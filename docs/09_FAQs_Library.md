@@ -48,6 +48,18 @@ A: Use Monthly for: startups, seasonal businesses, cash flow analysis, lender pr
 **Q: Why does the app default to 3 years?**  
 A: Three years is standard for small business projections. It's long enough to show viability but short enough to be realistic. Lenders typically require 3-5 year projections.
 
+**Q: What is the Projection Start Date setting? (v1.1)**  
+A: This lets you set the beginning month and year of your projection. Instead of seeing "Period 1, Period 2", you'll see "Jan 2026, Feb 2026", etc. This makes it easier to align your forecast with your actual business calendar. Find it on the Home page under Time Mode Configuration.
+
+**Q: Does changing the Projection Start Date affect my calculations? (v1.1)**  
+A: No. It only changes the labels on your reports and charts. All financial calculations remain exactly the same. It's purely for better context and readability.
+
+**Q: What month should I start my projection? (v1.1)**  
+A: Most businesses use January for calendar year planning. However, choose what makes sense for you: if you're opening in July, start there. If you have a fiscal year that starts in a different month, use that. The key is aligning with your actual business timeline.
+
+**Q: Why do I see "Jan 2026" instead of "Period 1"? (v1.1)**  
+A: Version 1.1 introduced calendar-based labels to make projections more meaningful. You can set your start month/year on the Home page. This helps you better understand when specific financial events occur in your business timeline.
+
 **Q: Can I extend beyond 3 years?**  
 A: Not currently. The app is designed for 3-year projections (36 months or 3 years). This matches lender requirements and realistic forecasting horizons.
 
@@ -173,6 +185,12 @@ A: The Operating Model is for ongoing operations. One-time expenses (equipment p
 
 **Q: Should I include owner's draw here?**  
 A: No. Owner compensation is configured in Financing page (Advanced mode). Choose either salary (payroll) or distribution (owner comp), not both.
+
+**Q: Why does my new expense start at $0? (v1.1)**  
+A: This is intentional! Version 1.1 changed the default from $1,000 to $0 to ensure you enter the actual expense amount deliberately. This prevents errors from forgetting to update placeholder values. Just enter your real expense amount.
+
+**Q: Can I change the default expense amount? (v1.1)**  
+A: The default is always $0 for new expenses. This is by design to encourage intentional data entry. Simply update each expense to its actual value as you add it.
 
 ---
 

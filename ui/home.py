@@ -320,6 +320,30 @@ def render():
     
     st.divider()
     
+    # ========== MEET ERIC SECTION ==========
+    st.markdown("### 💬 Meet Eric – Your Financial Modeling Guide")
+    
+    st.info("""
+**Building a financial model is about more than entering numbers—it's about making informed business decisions.**
+
+Eric is your built-in Financial Modeling Guide and is available throughout the application to answer questions about both financial concepts and how to use the Financial Modeler.
+
+**Whether you're wondering:**
+- What should I include in Cost of Goods Sold (COGS)?
+- How much working capital should I plan for?
+- Why did my cash flow change?
+- Where should I enter a particular expense?
+- How do I interpret a financial ratio or KPI?
+
+**Eric can explain financial concepts, help you navigate the application, and provide guidance on how different assumptions influence your financial projections.**
+
+Think of Eric as having an experienced business advisor sitting beside you while you build your model—ready to answer questions, explain the numbers, and help you gain confidence in your decisions.
+
+**There are no "bad" questions.** If something doesn't make sense, simply ask Eric. Understanding the "why" behind your numbers is just as important as building the model itself.
+    """)
+    
+    st.divider()
+    
     # Show unsaved changes banner if needed
     if has_unsaved_changes():
         st.warning("⚠️ **You have unsaved changes.** Save your model to preserve your work.")
